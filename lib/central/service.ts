@@ -13,6 +13,7 @@ import {
   updateAreaMetaInput,
   updateSummaryInput,
   type AreaKind,
+  type EntryType,
   type BriefingInput,
   type CreateAreaInput,
   type EditEntryInput,
@@ -291,8 +292,9 @@ export class CentralService {
     });
   }
 
-  async searchEntries(query: string, limit = 20) {
-    return this.repo.searchEntries({ query, limit, offset: 0 });
+  async searchEntries(query: string, options: { limit?: number; area?: string; type?: EntryType } = {}) {
+    const area = options.area ? await this.requireArea(options.area) : null;
+    return this.repo.searchEntries({ query, areaId: area?.id, type: options.type, limit: options.limit ?? 20, offset: 0 });
   }
 
   async stats() {
