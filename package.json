@@ -1,5 +1,6 @@
 {
   "name": "central-3c",
+  "description": "Memória compartilhada entre Claude e ChatGPT",
   "version": "0.1.0",
   "private": true,
   "scripts": {

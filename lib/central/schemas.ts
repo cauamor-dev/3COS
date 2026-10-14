@@ -22,9 +22,10 @@ const slugInput = z
   .max(80)
   .describe("Slug da área, ex.: axial, orion, faculdade-grafos. Acentos e espaços são normalizados.");
 
-const isoDate = z.iso
-  .datetime({ offset: true })
-  .or(z.iso.date())
+const isoDate = z
+  .string()
+  .trim()
+  .refine((value) => /^\d{4}-\d{2}-\d{2}/.test(value) && !Number.isNaN(Date.parse(value)), "Data inválida")
   .describe("Data ISO 8601, ex.: 2026-10-01 ou 2026-10-01T12:00:00-03:00");
 
 const tags = z

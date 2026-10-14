@@ -200,13 +200,14 @@
     oklch(0.85 0.1 300) 345deg,
     transparent 360deg
   );
-  mask:
-    linear-gradient(#000 0 0) content-box exclude,
-    linear-gradient(#000 0 0);
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
   animation: beam-spin 7s linear infinite;
   pointer-events: none;
   z-index: 1;

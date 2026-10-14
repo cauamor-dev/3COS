@@ -1,0 +1,125 @@
+# Setup passo a passo
+
+Tudo aqui cabe nos planos gratuitos: **Supabase Free** e **Vercel Hobby**. Nenhum passo pede cartão.
+
+## 0. Pré-requisitos
+
+- Node.js 20 ou superior
+- Contas gratuitas no [GitHub](https://github.com), [Supabase](https://supabase.com) e [Vercel](https://vercel.com) (dá para entrar na Vercel e no Supabase com o próprio GitHub)
+- GitHub CLI: `winget install GitHub.cli` (Windows) ou `brew install gh` (macOS)
+
+```bash
+git clone https://github.com/<seu-usuario>/central-3c.git
+cd central-3c
+npm install
+```
+
+## 1. Supabase
+
+1. Em [supabase.com/dashboard](https://supabase.com/dashboard), clique em **New project**.
+2. Nome: `central-3c`. Região: **South America (São Paulo)**. Crie uma senha do banco forte (guarde num gerenciador de senhas; o app não precisa dela). Plano **Free**.
+3. Quando o projeto terminar de subir, copie o **Reference ID** em *Project Settings → General* (20 letras, também aparece na URL).
+4. No terminal:
+
+```bash
+npx supabase login
+npx supabase link --project-ref <REFERENCE_ID>
+npx supabase db push
+```
+
+O `db push` cria as tabelas, índices de busca em português, RLS e a publicação do Realtime.
+
+5. Pegue as chaves em *Project Settings → API Keys* (ou `npx supabase projects api-keys --project-ref <REFERENCE_ID>`):
+   - `anon` / publishable → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `service_role` / secret → `SUPABASE_SERVICE_ROLE_KEY` (**nunca** exponha no cliente)
+
+## 2. Variáveis de ambiente
+
+```bash
+cp .env.example .env.local
+npm run secrets   # gera API_KEY, MCP_SECRET e CRON_SECRET
+```
+
+Preencha o `.env.local`:
+
+| Variável | Valor |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://<REFERENCE_ID>.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | chave anon/publishable |
+| `SUPABASE_SERVICE_ROLE_KEY` | chave service_role/secret |
+| `ALLOWED_EMAIL` | o único e-mail que pode entrar no painel |
+| `API_KEY`, `MCP_SECRET`, `CRON_SECRET` | saída do `npm run secrets` |
+| `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` localmente; a URL da Vercel em produção |
+
+Depois rode o seed (libera seu e-mail e cria as áreas `perfil`, `preferencias` e `inbox`):
+
+```bash
+npm run db:seed
+npm run dev
+```
+
+## 3. Deploy na Vercel
+
+```bash
+npx vercel login
+npx vercel link            # cria o projeto central-3c
+npx vercel env add NEXT_PUBLIC_SUPABASE_URL production
+# repita para cada variável do .env.local (NEXT_PUBLIC_APP_URL = https://<seu-projeto>.vercel.app)
+npx vercel deploy --prod
+```
+
+O `vercel.json` já registra o cron diário `/api/cron/keepalive`, que lê o banco e impede o Supabase Free de pausar por inatividade. A Vercel envia o `CRON_SECRET` automaticamente no header `Authorization`.
+
+## 4. Auth do Supabase (URLs e e-mail)
+
+Edite `supabase/config.toml` trocando `http://localhost:3000` pela URL de produção em `site_url` e adicionando `https://<seu-projeto>.vercel.app/auth/callback` em `additional_redirect_urls`. Depois:
+
+```bash
+npx supabase config push
+```
+
+Isso também instala o template de e-mail com **link + código de 6 dígitos**. O código é o melhor caminho no app instalado (PWA) do iPhone, porque o link abre no Safari, fora do app.
+
+> Opcional: depois do primeiro login, desligue cadastros novos em *Authentication → Sign In / Providers → Allow new users to sign up*. O RLS já bloqueia qualquer outro e-mail, mas assim nem a conta é criada.
+
+## 5. Claude (conector MCP)
+
+1. Abra o painel → **Conexões** e copie a **URL do conector** (`https://<app>/api/mcp/<MCP_SECRET>`).
+2. Em [claude.ai](https://claude.ai): **Configurações → Conectores → Adicionar conector personalizado**.
+3. Nome `Central 3C`, cole a URL e deixe as opções de OAuth em branco. Salve.
+4. Numa conversa, ative o conector no menu de ferramentas. Ele fica disponível também no app do celular.
+5. Cole o texto de `docs/claude-instrucoes.md` nas instruções dos seus Projetos e em **Configurações → Perfil → preferências**.
+
+Teste: “salva o contexto da Axial: estamos migrando o front para Next 16”.
+
+## 6. ChatGPT (GPT com Actions)
+
+1. Em [chatgpt.com/gpts/editor](https://chatgpt.com/gpts/editor) → **Configurar**.
+2. Nome `Central 3C`. Em **Instruções**, cole `docs/gpt-instrucoes.md`.
+3. **Criar nova ação → Importar de URL**: `https://<app>/api/v1/openapi.json`.
+4. **Autenticação → Chave de API → Bearer** e cole a `API_KEY`.
+5. **Política de privacidade**: `https://<app>/privacidade`.
+6. Salve como **Somente eu**. O GPT aparece no app do celular na barra lateral.
+
+Teste: “o que tem de novo na Axial?”.
+
+## 7. Testar o MCP com o Inspector
+
+```bash
+# interface web: escolha Streamable HTTP e cole a URL do conector
+npx @modelcontextprotocol/inspector
+
+# linha de comando
+npx @modelcontextprotocol/inspector --cli http://localhost:3000/api/mcp/<MCP_SECRET> --transport http --method tools/list
+npx @modelcontextprotocol/inspector --cli http://localhost:3000/api/mcp/<MCP_SECRET> --transport http --method tools/call --tool-name obter_briefing
+```
+
+## Problemas comuns
+
+| Sintoma | Causa provável |
+| --- | --- |
+| Login volta para `/login?erro=link` | Link aberto em outro navegador ou expirado. Use o código de 6 dígitos. |
+| “Este e-mail não tem acesso” | `ALLOWED_EMAIL` diferente do e-mail digitado, ou seed não rodou. |
+| Conector do Claude responde 404 | `MCP_SECRET` da URL diferente do configurado na Vercel. |
+| GPT responde 401 | API key errada na ação ou falta o tipo Bearer. |
+| Feed não atualiza sozinho | Migration não rodou a linha do `supabase_realtime`; rode `npx supabase db push`. |
