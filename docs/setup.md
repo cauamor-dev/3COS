@@ -82,7 +82,7 @@ Abra o link do e-mail no mesmo navegador em que pediu o acesso.
 
 > **Código de 6 dígitos (opcional):** o plano Free só permite editar templates de e-mail com um SMTP próprio (ex.: Resend, gratuito). Com SMTP configurado em *Authentication → Emails → SMTP Settings*, descomente o bloco `[auth.email.template.magic_link]` do `config.toml` e rode `npx supabase config push`: o e-mail passa a trazer também o código, que o painel aceita. É o melhor caminho no PWA do iPhone, onde o link abre no Safari, fora do app.
 
-> O cadastro de novos usuários já vem fechado (`enable_signup = false` no `config.toml`, aplicado pelo `npx supabase config push`), e o login não cria contas: só o e-mail do seed entra. Se você configurou o projeto antes disso, confira em *Authentication → Sign In / Providers* se **Allow new users to sign up** está desligado.
+> O cadastro de novos usuários já vem fechado (`enable_signup = false` em `[auth]` no `config.toml`, aplicado pelo `npx supabase config push`; o `[auth.email]` fica `true`, senão o login por e-mail para de funcionar), e o login não cria contas: só o e-mail do seed entra. Se você configurou o projeto antes disso, confira em *Authentication → Sign In / Providers* se **Allow new users to sign up** está desligado.
 
 ## 5. Claude (conector MCP)
 

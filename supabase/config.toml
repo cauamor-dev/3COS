@@ -13,7 +13,8 @@ additional_redirect_urls = [
 enable_signup = false
 
 [auth.email]
-enable_signup = false
+# Na CLI isto liga ou desliga o provedor de e-mail inteiro (inclusive o login), não só o cadastro.
+enable_signup = true
 otp_length = 6
 otp_expiry = 3600
 

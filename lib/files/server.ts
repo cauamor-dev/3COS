@@ -52,6 +52,7 @@ async function fetchPublic(url: string, hops = 0): Promise<Response> {
   const location = response.headers.get("location");
   if (response.status >= 300 && response.status < 400 && location) {
     const next = new URL(location, url).toString();
+    await response.body?.cancel();
     if (hops >= 3 || !isPublicHttpUrl(next)) throw new Error("Redirecionamento não permitido.");
     return fetchPublic(next, hops + 1);
   }
