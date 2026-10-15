@@ -1,4 +1,4 @@
-import { Brain, CalendarDays, CheckSquare, Database, FolderKanban, Home, Newspaper, PlugZap, Search } from "lucide-react";
+import { Brain, CalendarDays, CheckSquare, Database, FolderKanban, Home, Newspaper, PlugZap, Search, UserRound } from "lucide-react";
 
 export const NAV_ITEMS = [
   { href: "/", label: "Início", icon: Home },
@@ -8,6 +8,7 @@ export const NAV_ITEMS = [
   { href: "/cerebro", label: "Cérebro", icon: Brain },
   { href: "/buscar", label: "Buscar", icon: Search },
   { href: "/areas", label: "Áreas", icon: FolderKanban },
+  { href: "/perfil", label: "Perfil", icon: UserRound },
   { href: "/conexoes", label: "Conexões", icon: PlugZap },
   { href: "/dados", label: "Importar/Exportar", icon: Database },
 ] as const;
