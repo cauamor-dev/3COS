@@ -49,3 +49,6 @@ export const TYPE_LABEL: Record<EntryType, string> = {
   evento: "Evento",
   post: "Post",
 };
+
+/** Tag of price-watch requests delegated to Vega ("me avise quando o monitor entrar em promoção"). */
+export const WATCH_TAG = "vigia-preco";

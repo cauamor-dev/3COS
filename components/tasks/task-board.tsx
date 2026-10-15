@@ -12,6 +12,7 @@ import { useCentral } from "@/components/providers/central-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useNow } from "@/hooks/use-now";
+import { WATCH_TAG } from "@/components/central/labels";
 import type { Entry } from "@/lib/central/types";
 
 type Group = { id: string; label: string; tasks: Entry[]; tone?: "danger" };
@@ -35,7 +36,8 @@ export function TaskBoard({ tasks, serverNow }: { tasks: Entry[]; serverNow: num
       { id: "today", label: "Hoje", tasks: withDue.filter((t) => new Date(t.due_at!).getTime() >= reference && dayKey(t.due_at!) === today) },
       { id: "week", label: "Próximos 7 dias", tasks: withDue.filter((t) => dayKey(t.due_at!) > today && dayKey(t.due_at!) <= weekAhead) },
       { id: "later", label: "Depois", tasks: withDue.filter((t) => dayKey(t.due_at!) > weekAhead) },
-      { id: "nodate", label: "Sem prazo", tasks: pending.filter((t) => !t.due_at) },
+      { id: "nodate", label: "Sem prazo", tasks: pending.filter((t) => !t.due_at && !t.tags.includes(WATCH_TAG)) },
+      { id: "watch", label: "Vigias de preço", tasks: pending.filter((t) => !t.due_at && t.tags.includes(WATCH_TAG)) },
     ].filter((group) => group.tasks.length > 0);
   }, [optimistic, now]);
 

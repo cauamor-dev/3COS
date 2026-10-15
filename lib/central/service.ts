@@ -157,12 +157,19 @@ export interface Notice {
   kind?: Entry["type"];
 }
 
+const AGENT_NAME: Partial<Record<Entry["source"], string>> = { claude: "Vega", chatgpt: "Nox" };
+
 function reminderNotice(entry: Entry): Notice {
   return { ...reminderText(entry), entryId: entry.id, kind: entry.type };
 }
 
 function reminderText(entry: Entry): Notice {
   const path = `/areas/${entry.area.slug}#${entry.id}`;
+  const agent = AGENT_NAME[entry.source];
+  if (agent && (entry.priority === "alta" || entry.tags.includes("alerta")) && entry.type !== "evento") {
+    // Urgent findings from Vega/Nox (scheduled by the entries_alerta_ia trigger).
+    return { title: `${agent}: ${entry.title}`, body: entry.content_md.slice(0, 140) || entry.area.name, path };
+  }
   if (entry.type === "evento" && entry.starts_at) {
     const when = entry.all_day ? "Hoje, o dia todo" : `Às ${formatLocalTime(entry.starts_at)}`;
     return { title: entry.title, body: [when, entry.location].filter(Boolean).join(" · "), path };

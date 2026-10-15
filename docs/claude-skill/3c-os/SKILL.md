@@ -28,6 +28,12 @@ description: Memória, agenda, tarefas e Mural compartilhados entre Claude e Cha
 - Resultados de tarefas agendadas, notícias e achados: tipo `post` (vai para o Mural), com `links` das fontes e `imagem` quando houver.
 - Datas sempre com fuso de Brasília (-03:00).
 
+## Pedidos da Chloe e alertas
+
+- A Chloe (assistente do 3C OS) delega trabalho criando tarefas com a tag `vega` (para você) ou `nox`. No início da conversa, veja `listar_tarefas` e trate as suas.
+- Vigia de preço (tag `vigia-preco`): busque o preço atual em lojas confiáveis, salve um `post` na área `noticias` com link, imagem e preço. Se bater o preço-alvo (ou for promoção real), salve com tag `alerta`. Conclua a tarefa só quando o Cauã comprar ou desistir.
+- Tag `alerta` ou prioridade `alta` em algo que você salvar gera notificação imediata no celular do Cauã. Use só quando for realmente urgente.
+
 ## Resumo vivo
 
 - `atualizar_resumo` substitui o documento canônico da área. Use só quando algo mudar de verdade (escopo, stack, status, próximos passos).

@@ -1,13 +1,13 @@
 "use client";
 
 import { cn } from "cn";
-import { AlertTriangle, ArrowUpRight, Check, Clock, Flame, Inbox, MapPin, Newspaper } from "lucide-react";
+import { AlertTriangle, ArrowUpRight, Check, Clock, Eye, Flame, Inbox, MapPin, Newspaper } from "lucide-react";
 import Link from "next/link";
 import { useOptimistic, useTransition } from "react";
 import { toast } from "sonner";
 import { editEntryAction } from "@/app/(app)/actions";
 import { dayKey, dayLabel, formatTime } from "@/components/central/dates";
-import { SOURCE_COLOR, SOURCE_PERSONA } from "@/components/central/labels";
+import { SOURCE_COLOR, SOURCE_PERSONA, WATCH_TAG } from "@/components/central/labels";
 import { TimeAgo } from "@/components/central/time-ago";
 import { useNewsActions } from "@/components/news/use-news-actions";
 import type { Source } from "@/lib/central/schemas";
@@ -44,6 +44,7 @@ export function HomeBento({ events, tasks, recent, news, inboxCount, now, onOpen
   const upcoming = events.filter((e) => Date.parse(e.end ?? e.start) + (e.end ? 0 : HOUR) >= now).sort((a, b) => a.start.localeCompare(b.start));
   const next = upcoming[0];
   const open = tasks.filter((t) => !t.done_at && !t.archived && !done.includes(t.id));
+  const watches = open.filter((t) => t.tags.includes(WATCH_TAG));
   const late = open.filter((t) => t.due_at && Date.parse(t.due_at) < now);
   const dueToday = open.filter((t) => t.due_at && dayKey(t.due_at) === today && Date.parse(t.due_at) >= now);
   const focus = [...late, ...dueToday, ...open.filter((t) => t.priority === "alta" && !late.includes(t) && !dueToday.includes(t))].slice(0, 4);
@@ -178,6 +179,18 @@ export function HomeBento({ events, tasks, recent, news, inboxCount, now, onOpen
           Ver tudo em lista <ArrowUpRight className="size-4 text-lilac" />
         </p>
       </button>
+
+      {/* Vigias de preço (pedidos delegados à Vega) */}
+      {watches.length > 0 && (
+        <Link
+          href="/tarefas"
+          className="glass col-span-2 flex items-center gap-3 overflow-hidden rounded-2xl px-4 py-3 transition-colors duration-150 hover:border-primary/40 md:col-span-4"
+        >
+          <Eye className="size-4 shrink-0 text-lilac" />
+          <p className="label-mono shrink-0">vigiando</p>
+          <p className="min-w-0 truncate text-sm">{watches.map((t) => t.title.replace(/^Vigiar preço:\s*/i, "")).join(" · ")}</p>
+        </Link>
+      )}
 
       {/* Mais notícias */}
       {carousel.length > 0 && (

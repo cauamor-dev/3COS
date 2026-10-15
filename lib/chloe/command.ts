@@ -9,7 +9,8 @@ export type Command =
   | { kind: "consulta"; from: string; to: string; label: string }
   | { kind: "nota" | "ideia"; title: string; content: string }
   | { kind: "lembrete" | "tarefa"; title: string; at: string | null }
-  | { kind: "evento"; title: string; start: string; allDay: boolean };
+  | { kind: "evento"; title: string; start: string; allDay: boolean }
+  | { kind: "vigia"; product: string; target: number | null };
 
 const strip = (value: string) => value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().trim();
 
@@ -19,6 +20,8 @@ const IDEA = /^(ideia|tive uma ideia)\b/;
 const REMINDER = /\b(me lembr\w*|lembr(e|a|ar)(-me)?|lembrete|me avis\w*)\b/;
 const EVENT = /\b(tenho|prova|reuniao|aula|consulta|evento|compromisso|marca(r)?|agenda(r)?|entrevista|apresentacao|jogo|festa|aniversario|viagem|dentista|medico|show|culto|treino)\b/;
 const TASK = /^(preciso|tenho que|tarefa|fazer|comprar|pagar|ligar|enviar|mandar|estudar|terminar|entregar|resolver)\b/;
+
+const WATCH = /\b(promocao|promo|ficar mais barato|baixar o preco|preco (baixar|cair)|vigi(a|ar|e) o preco|monitor(a|e|ar) o preco|acompanh(a|e|ar) o preco)\b/;
 
 const LEADING = [
   /^(anota(r|e)?|nota|salva(r)?|salve|guarda(r)?|guarde|registra(r)?|registre)\b(\s+(ai|aí|isso|que|pra mim|para mim))*\s*[:,-]?\s*/i,
@@ -61,6 +64,7 @@ export function interpretCommand(input: string, now = new Date()): Command | nul
     return { kind: "consulta", from: day, to: day, label };
   }
 
+  if (WATCH.test(lower)) return watch(raw);
   if (IDEA.test(lower)) return { kind: "ideia", title: short(tidy(raw)), content: raw };
   if (NOTE.test(lower)) return { kind: "nota", title: short(tidy(raw)), content: raw };
 
@@ -73,6 +77,21 @@ export function interpretCommand(input: string, now = new Date()): Command | nul
   }
   if (parsed.at || TASK.test(lower)) return { kind: "tarefa", title, at: parsed.at };
   return { kind: "nota", title: short(tidy(raw)), content: raw };
+}
+
+/** "Quero comprar um monitor, me avise quando estiver em promoção (até R$ 900)" → price watch for Vega. */
+function watch(raw: string): Command {
+  const price = strip(raw).match(/(?:r\$\s?|ate |abaixo de |menos de |por )(\d{1,6}(?:[.,]\d{3})*(?:,\d{2})?)|(\d{2,6})\s?reais/);
+  const target = price ? Number((price[1] ?? price[2]).replace(/\.(?=\d{3})/g, "").replace(",", ".")) : null;
+  const product = raw
+    .split(/[,;]|\s+(?:e\s+)?(?:me avis\w*|avis\w* quando|quando (?:estiver|ficar|entrar|baixar|cair)|em promo\w*|se (?:baixar|cair))\b/i)[0]
+    .replace(/^(eu\s+)?(quero|queria|vou|preciso|pretendo)\s+(comprar|um|uma)\s+/i, "")
+    .replace(/^(vigi\w*|monitor[ae]r?|acompanh\w*)\s+(o\s+)?(pre[cç]o\s+)?(d[eoa]s?\s+)?/i, "")
+    .replace(/^(um|uma|o|a)\s+/i, "")
+    .replace(/\s*(?:at[eé]|abaixo de|menos de|por)?\s*(?:R\$\s?[\d.,]+|\d+\s?reais)\s*$/i, "")
+    .replace(/[?.!]+$/, "")
+    .trim();
+  return { kind: "vigia", product: short(/^[a-z][A-Z]/.test(product) ? product : product.charAt(0).toUpperCase() + product.slice(1), 80), target: target && target > 0 ? target : null };
 }
 
 function short(text: string, max = 120) {

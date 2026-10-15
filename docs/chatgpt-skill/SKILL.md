@@ -29,6 +29,7 @@ Use o plugin **Supabase** com `execute_sql` **somente** para chamar funções do
 - Concluir tarefa: `select central.editar_registro(p_id => '<id>', p_concluida => true, p_fonte => 'chatgpt');`
 - Post no Mural (notícias, achados, resultados de tarefas agendadas): `p_tipo => 'post', p_area => 'noticias', p_links => '[{"url":"https://...","titulo":"Fonte"}]'::jsonb, p_imagem => 'https://.../imagem.jpg'`
 - Datas sempre com fuso de Brasília (-03:00).
+- Pedidos da Chloe (assistente do 3C OS): tarefas com a tag `nox` são para você; veja `central.listar_tarefas()` no início. Vigia de preço (tag `vigia-preco`): pesquise o preço, salve um post em `noticias` com link, imagem e preço, e use `p_tags => array['alerta']` se bater o alvo. Tag `alerta` ou prioridade alta gera notificação imediata no celular do Cauã: só para o que for urgente.
 - Editar ou arquivar: `select central.editar_registro(p_id => '<id>', p_conteudo => '...', p_fonte => 'chatgpt');` ou `p_arquivado => true` (só se o usuário pedir).
 
 Use aspas simples e escape `'` como `''` dentro dos textos. Escreva registros autossuficientes (o quê, por quê, próximos passos). Não salve senhas, tokens nem dados pessoais de terceiros. Responda em português do Brasil.

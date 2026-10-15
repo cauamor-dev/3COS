@@ -58,6 +58,12 @@ describe("comandos da Chloe", () => {
     expect(interpretCommand("o que tenho essa semana", now)).toMatchObject({ from: "2026-10-14", to: "2026-10-20" });
   });
 
+  it("pedido de vigia de preço", () => {
+    expect(interpretCommand("quero comprar um monitor, me avise quando estiver em promoção", now)).toEqual({ kind: "vigia", product: "Monitor", target: null });
+    expect(interpretCommand("vigia o preço do iPhone 15 até R$ 3.500", now)).toEqual({ kind: "vigia", product: "iPhone 15", target: 3500 });
+    expect(interpretCommand("me avisa quando o tênis Nike baixar o preço, até 400 reais", now)).toMatchObject({ kind: "vigia", target: 400 });
+  });
+
   it("texto solto vira nota e vazio é ignorado", () => {
     expect(interpretCommand("frase que não é comando", now)).toMatchObject({ kind: "nota" });
     expect(interpretCommand("   ", now)).toBeNull();
