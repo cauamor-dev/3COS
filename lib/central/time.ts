@@ -28,6 +28,17 @@ export function startOfLocalDay(at: Date | number = Date.now()) {
   return new Date(local.getTime() + OFFSET_MS);
 }
 
+const localTime = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+const localDay = new Intl.DateTimeFormat("pt-BR", { timeZone: "America/Sao_Paulo", weekday: "long", day: "numeric", month: "long" });
+
+export function formatLocalTime(iso: string) {
+  return localTime.format(new Date(iso));
+}
+
+export function formatLocalDay(at: Date) {
+  return localDay.format(at);
+}
+
 export function addDays(at: Date, days: number) {
   return new Date(at.getTime() + days * DAY);
 }

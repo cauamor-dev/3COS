@@ -33,7 +33,17 @@ import {
   type UpdateSummaryInput,
 } from "./schemas";
 import { normalizeTags, slugify, titleFromSlug, truncate } from "./text";
-import { addDays, isDateOnly, occurrencesBetween, startOfLocalDay, toIsoEnd, toIsoStart } from "./time";
+import {
+  addDays,
+  formatLocalDay,
+  formatLocalTime,
+  isDateOnly,
+  occurrencesBetween,
+  startOfLocalDay,
+  stepRecurrence,
+  toIsoEnd,
+  toIsoStart,
+} from "./time";
 import type { Area, CentralRepository, Entry, EntryPatch, ScheduleFields, Version } from "./types";
 
 export const LIMITS = {
@@ -134,6 +144,25 @@ function areaView(area: Area, max: number) {
 function pagination(total: number, offset: number, count: number) {
   const hasMore = offset + count < total;
   return { total, offset, ...(hasMore && { proximo_offset: offset + count }) };
+}
+
+export interface Notice {
+  title: string;
+  body: string;
+  path: string;
+}
+
+function reminderNotice(entry: Entry): Notice {
+  const path = `/areas/${entry.area.slug}#${entry.id}`;
+  if (entry.type === "evento" && entry.starts_at) {
+    const when = entry.all_day ? "Hoje, o dia todo" : `Às ${formatLocalTime(entry.starts_at)}`;
+    return { title: entry.title, body: [when, entry.location].filter(Boolean).join(" · "), path };
+  }
+  if (entry.type === "tarefa") {
+    const due = entry.due_at ? `Prazo às ${formatLocalTime(entry.due_at)}` : "Tarefa pendente";
+    return { title: `Lembrete: ${entry.title}`, body: due, path };
+  }
+  return { title: `Lembrete: ${entry.title}`, body: entry.content_md.slice(0, 140) || entry.area.name, path };
 }
 
 const truncationHint = "Conteúdos marcados com truncado=true estão cortados; use ler_registro com o id para ler completo.";
@@ -357,6 +386,47 @@ export class CentralService {
     const area = input.area ? await this.requireArea(input.area) : null;
     const tasks = await this.repo.listTasks({ status: input.status, areaId: area?.id, limit: input.limite });
     return { tarefas: tasks.map((task) => entryView(task, LIMITS.entryInList)), total: tasks.length };
+  }
+
+  async dispatchReminders(send: (notice: Notice) => Promise<unknown>, now = new Date()) {
+    const due = await this.repo.listDueReminders(now.toISOString());
+    for (const entry of due) {
+      await send(reminderNotice(entry));
+      if (entry.recurrence) {
+        let next = new Date(entry.remind_at!);
+        while (next <= now) next = stepRecurrence(next, entry.recurrence);
+        await this.repo.updateEntry(entry.id, { remind_at: next.toISOString(), reminded_at: null });
+      } else {
+        await this.repo.updateEntry(entry.id, { reminded_at: now.toISOString() });
+      }
+    }
+    return due.length;
+  }
+
+  async dailySummary(now = new Date()): Promise<Notice & { lines: string[] }> {
+    const today = startOfLocalDay(now);
+    const tomorrow = addDays(today, 1);
+    const [events, pending, inbox] = await Promise.all([
+      this.eventsBetween(today, tomorrow),
+      this.repo.listTasks({ status: "pendentes", limit: 200 }),
+      this.repo.findAreaBySlug(INBOX_SLUG),
+    ]);
+    const inboxCount = inbox ? (await this.repo.listEntries({ areaId: inbox.id, limit: 1, offset: 0 })).total : 0;
+    const late = pending.filter((task) => task.due_at && task.due_at < now.toISOString());
+    const dueToday = pending.filter((task) => task.due_at && task.due_at >= now.toISOString() && task.due_at < tomorrow.toISOString());
+
+    const lines = [
+      ...events.map(({ entry, start }) => `${entry.all_day ? "Dia todo" : formatLocalTime(start)} · ${entry.title}`),
+      ...dueToday.map((task) => `Prazo ${formatLocalTime(task.due_at!)} · ${task.title}`),
+      ...late.map((task) => `Atrasada · ${task.title}`),
+      ...(inboxCount > 0 ? [`${inboxCount} registro(s) na inbox para revisar`] : []),
+    ];
+    return {
+      title: `Bom dia! ${formatLocalDay(now)}`,
+      body: lines.length ? lines.join("\n") : "Agenda livre hoje. Bom momento para avançar no projeto principal.",
+      path: "/agenda",
+      lines,
+    };
   }
 
   // Painel

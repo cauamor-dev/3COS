@@ -112,3 +112,36 @@ describe("eventos e tarefas", () => {
     expect(feed.items).toHaveLength(1);
   });
 });
+
+describe("lembretes", () => {
+  it("dispara lembretes vencidos, marca os únicos e avança os recorrentes", async () => {
+    const now = new Date();
+    const past = new Date(now.getTime() - 60_000).toISOString();
+    await central.saveEntry({ titulo: "Ligar pro Lott", tipo: "tarefa", lembrar_em: past }, "claude");
+    await central.saveEntry(
+      { titulo: "Academia", tipo: "evento", inicio: past, recorrencia: "diaria", lembrar_em: past },
+      "manual",
+    );
+    await central.saveEntry({ titulo: "Futuro", tipo: "tarefa", lembrar_em: new Date(now.getTime() + 3600_000).toISOString() }, "manual");
+
+    const sent: string[] = [];
+    const count = await central.dispatchReminders(async (notice) => sent.push(notice.title), now);
+
+    expect(count).toBe(2);
+    expect(sent).toEqual(["Lembrete: Ligar pro Lott", "Academia"]);
+    expect(repo.entries[0].reminded_at).not.toBeNull();
+    expect(repo.entries[1].reminded_at).toBeNull();
+    expect(new Date(repo.entries[1].remind_at!).getTime()).toBeGreaterThan(now.getTime());
+
+    expect(await central.dispatchReminders(async () => {}, now)).toBe(0);
+  });
+
+  it("monta o resumo diário com atrasadas e inbox", async () => {
+    await central.saveEntry({ titulo: "Atrasada", tipo: "tarefa", prazo: "2020-01-01" }, "manual");
+    await central.saveEntry({ titulo: "Ideia solta" }, "manual");
+    const summary = await central.dailySummary();
+    expect(summary.title).toMatch(/^Bom dia!/);
+    expect(summary.lines).toContain("Atrasada · Atrasada");
+    expect(summary.lines.some((line) => line.includes("inbox"))).toBe(true);
+  });
+});

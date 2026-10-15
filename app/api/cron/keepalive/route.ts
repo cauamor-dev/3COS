@@ -1,9 +1,8 @@
 import { adminCentral } from "@/lib/central/server";
-import { serverEnv } from "@/lib/env";
-import { bearerToken, safeEqual } from "@/lib/http/auth";
+import { isCronRequest } from "@/lib/http/cron";
 
 export async function GET(request: Request) {
-  if (!safeEqual(bearerToken(request), serverEnv.cronSecret)) {
+  if (!isCronRequest(request)) {
     return Response.json({ ok: false }, { status: 401 });
   }
   const started = Date.now();

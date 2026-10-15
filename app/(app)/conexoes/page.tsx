@@ -3,10 +3,12 @@ import path from "node:path";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { CopyBlock, CopyField } from "@/components/connections/copy-field";
+import { PushToggle } from "@/components/notifications/push-toggle";
 import { PageHeader } from "@/components/shell/page-header";
 import { requireMember } from "@/lib/auth";
 import { serverEnv } from "@/lib/env";
 import { derivedSecret } from "@/lib/http/derived-secret";
+import { enabledChannels } from "@/lib/notify/notifier";
 
 export const metadata: Metadata = { title: "Conexões" };
 
@@ -20,8 +22,37 @@ async function Connections() {
   const icsToken = derivedSecret(serverEnv.mcpSecret, "ics");
   const icsUrl = `${serverEnv.appUrl}/api/agenda/${icsToken}.ics`;
 
+  const channels = enabledChannels();
+
   return (
     <div className="grid gap-4 lg:grid-cols-2">
+      <section className="glass space-y-4 rounded-2xl p-5 lg:col-span-2">
+        <header className="flex flex-wrap items-center gap-2">
+          <span className="size-2 rounded-full bg-primary" />
+          <h2 className="font-medium">Notificações e lembretes</h2>
+          <div className="ml-auto flex flex-wrap gap-1.5 font-mono text-[11px]">
+            {(
+              [
+                ["push", "Push"],
+                ["email", "E-mail"],
+                ["telegram", "Telegram"],
+              ] as const
+            ).map(([key, label]) => (
+              <span
+                key={key}
+                className={channels[key] ? "rounded-full border border-emerald-400/40 px-2 py-0.5 text-emerald-300" : "rounded-full border px-2 py-0.5 text-muted-foreground"}
+              >
+                {label} {channels[key] ? "ligado" : "desligado"}
+              </span>
+            ))}
+          </div>
+        </header>
+        <p className="text-sm text-muted-foreground">
+          Lembretes de eventos e tarefas chegam no horário (verificação a cada 5 minutos), e às 7h vem o resumo do dia. Ative em cada aparelho que quiser receber.
+        </p>
+        <PushToggle />
+      </section>
+
       <section className="glass space-y-4 rounded-2xl p-5">
         <header className="flex items-center gap-2">
           <span className="size-2 rounded-full bg-claude" />

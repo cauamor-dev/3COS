@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { getMember } from "@/lib/auth";
 import { describeError } from "@/lib/central/format-error";
+import { notify } from "@/lib/notify/notifier";
 import type {
   CreateAreaInput,
   EditEntryInput,
@@ -71,4 +72,40 @@ export async function getAreaAction(slug: string): Promise<ActionResult<Area>> {
 export async function searchAction(query: string): Promise<ActionResult<Entry[]>> {
   if (!query.trim()) return { ok: true, data: [] };
   return run(async (central) => (await central.searchEntries(query, { limit: 8 })).items, { refreshPage: false });
+}
+
+export interface PushSubscriptionInput {
+  endpoint: string;
+  keys: { p256dh: string; auth: string };
+  userAgent?: string;
+}
+
+export async function subscribePushAction(subscription: PushSubscriptionInput): Promise<ActionResult> {
+  const member = await getMember();
+  if (!member) return { ok: false, error: "Sessão expirada. Entre novamente." };
+  const { error } = await member.supabase.from("push_subscriptions").upsert(
+    {
+      endpoint: subscription.endpoint,
+      p256dh: subscription.keys.p256dh,
+      auth: subscription.keys.auth,
+      user_agent: subscription.userAgent?.slice(0, 200) ?? null,
+    },
+    { onConflict: "endpoint" },
+  );
+  return error ? { ok: false, error: error.message } : { ok: true, data: undefined };
+}
+
+export async function unsubscribePushAction(endpoint: string): Promise<ActionResult> {
+  const member = await getMember();
+  if (!member) return { ok: false, error: "Sessão expirada. Entre novamente." };
+  const { error } = await member.supabase.from("push_subscriptions").delete().eq("endpoint", endpoint);
+  return error ? { ok: false, error: error.message } : { ok: true, data: undefined };
+}
+
+export async function testNotificationAction(): Promise<ActionResult<string>> {
+  const member = await getMember();
+  if (!member) return { ok: false, error: "Sessão expirada. Entre novamente." };
+  const results = await notify({ title: "Central 3C", body: "Notificações funcionando. Os lembretes chegam aqui.", path: "/" });
+  if (results.length === 0) return { ok: false, error: "Nenhum canal configurado." };
+  return { ok: true, data: results.map((r) => `${r.channel}: ${r.ok ? "ok" : "falhou"}${r.detail ? ` (${r.detail})` : ""}`).join(" · ") };
 }

@@ -1,4 +1,4 @@
-const CACHE = "c3c-v1";
+const CACHE = "c3c-v2";
 const OFFLINE_URL = "/offline.html";
 
 self.addEventListener("install", (event) => {
@@ -38,4 +38,28 @@ self.addEventListener("fetch", (event) => {
       ),
     );
   }
+});
+
+self.addEventListener("push", (event) => {
+  const data = event.data ? event.data.json() : {};
+  event.waitUntil(
+    self.registration.showNotification(data.title || "Central 3C", {
+      body: data.body || "",
+      icon: "/icons/192",
+      badge: "/icons/192",
+      data: { url: data.url || "/" },
+    }),
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = new URL(event.notification.data?.url || "/", self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clients) => {
+      const open = clients.find((client) => client.url.startsWith(self.location.origin));
+      if (open) return open.navigate(url).then((client) => client && client.focus());
+      return self.clients.openWindow(url);
+    }),
+  );
 });
