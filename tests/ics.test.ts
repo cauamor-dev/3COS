@@ -27,6 +27,7 @@ const base: Entry = {
   reminded_at: null,
   links: [],
   image_url: null,
+  priority: null,
 };
 
 describe("feed ICS", () => {

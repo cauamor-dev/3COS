@@ -5,12 +5,14 @@ export const AREA_KINDS = ["projeto", "trabalho", "faculdade", "curso", "pessoal
 export const AREA_STATUSES = ["ativo", "pausado", "concluido", "arquivado"] as const;
 export const ENTRY_TYPES = ["contexto", "decisao", "progresso", "tarefa", "nota", "ideia", "evento", "post"] as const;
 export const RECURRENCES = ["diaria", "semanal", "mensal", "anual"] as const;
+export const PRIORITIES = ["alta", "media", "baixa"] as const;
 
 export type Source = (typeof SOURCES)[number];
 export type AreaKind = (typeof AREA_KINDS)[number];
 export type AreaStatus = (typeof AREA_STATUSES)[number];
 export type EntryType = (typeof ENTRY_TYPES)[number];
 export type Recurrence = (typeof RECURRENCES)[number];
+export type Priority = (typeof PRIORITIES)[number];
 
 export const sourceSchema = z.enum(SOURCES);
 export const areaKindSchema = z.enum(AREA_KINDS).describe("Tipo da área");
@@ -64,6 +66,7 @@ const scheduleFields = {
   lembrar_em: isoDate.optional().describe("Quando avisar o usuário, com fuso. Ex.: 2026-10-20T08:00:00-03:00"),
   links: z.array(linkSchema).max(10).optional().describe("Links de fontes e referências"),
   imagem: z.url().optional().describe("URL de imagem para destacar o registro (útil em posts)"),
+  prioridade: z.enum(PRIORITIES).optional().describe("Prioridade (alta, media, baixa). Use alta só para o que é realmente urgente"),
 };
 
 export const briefingInput = z.object({

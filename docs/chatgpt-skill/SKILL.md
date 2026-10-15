@@ -25,6 +25,7 @@ Use o plugin **Supabase** com `execute_sql` **somente** para chamar funções do
 - Resumo da área: leia antes com `central.ler_area` e envie o texto completo mesclado: `select central.atualizar_resumo(p_area => 'axial', p_resumo => '...', p_fonte => 'chatgpt');`
 - Evento: `select central.salvar_registro(p_titulo => 'Prova de Grafos', p_tipo => 'evento', p_area => 'faculdade-grafos', p_inicio => '2026-11-03T19:00:00-03:00', p_fim => '2026-11-03T22:30:00-03:00', p_local => 'PUC Betim', p_lembrar_em => '2026-11-03T08:00:00-03:00', p_fonte => 'chatgpt');` Repetição: `p_recorrencia => 'semanal'` (diaria, semanal, mensal, anual).
 - Tarefa: `p_tipo => 'tarefa', p_prazo => '2026-10-20T18:00:00-03:00'`. Lembrete avulso ("me lembra amanhã às 9h"): tarefa com `p_lembrar_em`.
+- Prioridade (alta, media, baixa): `select central.definir_prioridade(p_id => '<id>', p_prioridade => 'alta', p_fonte => 'chatgpt');`
 - Concluir tarefa: `select central.editar_registro(p_id => '<id>', p_concluida => true, p_fonte => 'chatgpt');`
 - Post no Mural (notícias, achados, resultados de tarefas agendadas): `p_tipo => 'post', p_area => 'noticias', p_links => '[{"url":"https://...","titulo":"Fonte"}]'::jsonb, p_imagem => 'https://.../imagem.jpg'`
 - Datas sempre com fuso de Brasília (-03:00).

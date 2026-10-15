@@ -19,7 +19,7 @@ import type {
 
 const ENTRY_COLUMNS =
   "id, area_id, type, title, content_md, tags, source, updated_by, pinned, archived, created_at, updated_at, " +
-  "starts_at, ends_at, all_day, location, recurrence, due_at, done_at, remind_at, reminded_at, links, image_url, " +
+  "starts_at, ends_at, all_day, location, recurrence, due_at, done_at, remind_at, reminded_at, links, image_url, priority, " +
   "area:areas!inner(slug, name)";
 
 function check<T>(result: { data: T | null; error: PostgrestError | null }, what: string): T {

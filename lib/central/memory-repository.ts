@@ -29,6 +29,7 @@ const EMPTY_SCHEDULE: ScheduleFields = {
   reminded_at: null,
   links: [],
   image_url: null,
+  priority: null,
 };
 import type { Source } from "./schemas";
 

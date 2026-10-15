@@ -1,4 +1,4 @@
-import type { AreaKind, AreaStatus, EntryLink, EntryType, Recurrence, Source } from "./schemas";
+import type { AreaKind, AreaStatus, EntryLink, EntryType, Priority, Recurrence, Source } from "./schemas";
 
 export interface Area {
   id: string;
@@ -37,6 +37,7 @@ export interface Entry {
   reminded_at: string | null;
   links: EntryLink[];
   image_url: string | null;
+  priority: Priority | null;
 }
 
 export type ScheduleFields = Pick<
@@ -52,6 +53,7 @@ export type ScheduleFields = Pick<
   | "reminded_at"
   | "links"
   | "image_url"
+  | "priority"
 >;
 
 export interface Version {

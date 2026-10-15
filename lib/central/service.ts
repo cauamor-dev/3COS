@@ -92,6 +92,7 @@ function scheduleView(entry: Entry) {
     ...(entry.remind_at && { lembrar_em: entry.remind_at }),
     ...(entry.links?.length && { links: entry.links }),
     ...(entry.image_url && { imagem: entry.image_url }),
+    ...(entry.priority && { prioridade: entry.priority }),
   };
 }
 
@@ -105,6 +106,7 @@ interface ScheduleInput {
   lembrar_em?: string;
   links?: ScheduleFields["links"];
   imagem?: string;
+  prioridade?: ScheduleFields["priority"];
 }
 
 function scheduleFromInput(input: ScheduleInput): Partial<ScheduleFields> {
@@ -124,6 +126,7 @@ function scheduleFromInput(input: ScheduleInput): Partial<ScheduleFields> {
   }
   if (input.links !== undefined) fields.links = input.links;
   if (input.imagem !== undefined) fields.image_url = input.imagem;
+  if (input.prioridade !== undefined) fields.priority = input.prioridade;
   return fields;
 }
 
