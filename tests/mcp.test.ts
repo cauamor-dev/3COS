@@ -47,7 +47,7 @@ describe("autenticação do MCP", () => {
       clientInfo: { name: "vitest", version: "1.0.0" },
     });
     expect(status).toBe(200);
-    expect(body.result.serverInfo.name).toBe("central-3c");
+    expect(body.result.serverInfo.name).toBe("3c-os");
   });
 });
 

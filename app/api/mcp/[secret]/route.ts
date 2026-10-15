@@ -8,7 +8,7 @@ import { createRateLimiter } from "@/lib/http/rate-limit";
 import { MCP_INSTRUCTIONS, registerCentralTools } from "@/lib/mcp/server";
 
 const mcpHandler = createMcpHandler((server) => registerCentralTools(server, adminCentral), {
-  serverInfo: { name: "central-3c", version: "1.0.0" },
+  serverInfo: { name: "3c-os", version: "2.0.0" },
   instructions: MCP_INSTRUCTIONS,
 });
 

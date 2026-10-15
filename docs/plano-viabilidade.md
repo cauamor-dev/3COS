@@ -1,6 +1,6 @@
 # Plano de viabilidade: custos, riscos e trilha
 
-_Outubro de 2026._ Objetivo: transformar a Central 3C no ambiente pessoal completo (memória das IAs, agenda, tarefas, notas, anexos, lembretes e conversa por mensagem) **mantendo custo zero sempre que possível**, e saber exatamente quando e por que pagar.
+_Outubro de 2026._ Objetivo: transformar a 3C OS no ambiente pessoal completo (memória das IAs, agenda, tarefas, notas, anexos, lembretes e conversa por mensagem) **mantendo custo zero sempre que possível**, e saber exatamente quando e por que pagar.
 
 ## 1. Mapa de custos
 
@@ -19,13 +19,13 @@ _Outubro de 2026._ Objetivo: transformar a Central 3C no ambiente pessoal comple
 
 | Item | Quando faria sentido | Custo aproximado | Recomendação |
 | --- | --- | --- | --- |
-| **IA para conversar com a Central** (Telegram e painel) | Para falar em linguagem natural ("me lembra amanhã às 9h de ligar pro Lott") | **Gemini Flash grátis**: poucas requisições por dia e o Google pode usar seus dados para treino. **API paga** (Gemini/OpenAI, modelos pequenos): centavos por dia, ~R$ 5 a 15/mês com teto configurado | Começar com **comandos sem IA** (grátis e privado). Depois, API paga com teto de gastos, porque a Central guarda dados pessoais |
+| **IA para conversar com o 3C OS** (Telegram e painel) | Para falar em linguagem natural ("me lembra amanhã às 9h de ligar pro Lott") | **Gemini Flash grátis**: poucas requisições por dia e o Google pode usar seus dados para treino. **API paga** (Gemini/OpenAI, modelos pequenos): centavos por dia, ~R$ 5 a 15/mês com teto configurado | Começar com **comandos sem IA** (grátis e privado). Depois, API paga com teto de gastos, porque o 3C OS guarda dados pessoais |
 | **WhatsApp oficial** (Meta Cloud API) | Se quiser receber e conversar pelo WhatsApp em vez do Telegram | Respostas em até 24 h são grátis; lembretes iniciados pelo sistema custam ~R$ 0,035 cada (~R$ 3 a 5/mês). Exige conta Meta Business, **um número dedicado** (não o seu pessoal) e modelos aprovados | **Telegram primeiro.** WhatsApp como fase opcional; serviços "grátis" não oficiais (ex.: CallMeBot) vivem sendo bloqueados |
 | **Domínio próprio** (ex.: `central3c.com.br`) | E-mail com remetente próprio, URL bonita no portfólio | ~R$ 40/ano | Opcional, quando virar produto |
 | **Supabase Pro** | Backups automáticos, sem pausa, mais espaço | US$ 25/mês | **Não precisa.** Backup diário no GitHub + keepalive resolvem |
 | **Vercel Pro** | Crons de minuto, mais limites | US$ 20/mês | **Não precisa.** O `pg_cron` do Supabase faz o agendamento fino de graça |
 
-**Conclusão:** dá para manter tudo grátis. O único gasto que **recomendo** no futuro é uma API de IA paga com teto (~R$ 10/mês), quando você quiser conversar em linguagem natural com a Central sem entregar seus dados pessoais para treino.
+**Conclusão:** dá para manter tudo grátis. O único gasto que **recomendo** no futuro é uma API de IA paga com teto (~R$ 10/mês), quando você quiser conversar em linguagem natural com o 3C OS sem entregar seus dados pessoais para treino.
 
 ## 3. O que pode dar errado
 

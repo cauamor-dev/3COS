@@ -66,7 +66,7 @@ async function sendEmail(notification: Notification): Promise<ChannelResult> {
     method: "POST",
     headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      from: process.env.EMAIL_FROM ?? "Central 3C <onboarding@resend.dev>",
+      from: process.env.EMAIL_FROM ?? "3C OS <onboarding@resend.dev>",
       to: [process.env.NOTIFY_EMAIL ?? serverEnv.allowedEmail],
       subject: notification.title,
       text: `${notification.body}\n\n${serverEnv.appUrl}${notification.path ?? "/"}`,

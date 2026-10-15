@@ -10,7 +10,7 @@ export default function PrivacyPage() {
       <h1 className="text-2xl font-semibold">Política de privacidade</h1>
       <div className="mt-6 space-y-4 text-sm leading-relaxed text-muted-foreground">
         <p>
-          A Central 3C é um aplicativo pessoal, de um único usuário. Ela guarda notas, resumos e registros enviados pelo
+          A 3C OS é um aplicativo pessoal, de um único usuário. Ela guarda notas, resumos e registros enviados pelo
           próprio dono, diretamente ou por meio dos assistentes Claude e ChatGPT autorizados por ele.
         </p>
         <p>

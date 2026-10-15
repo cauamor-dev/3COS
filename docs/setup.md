@@ -88,7 +88,7 @@ Abra o link do e-mail no mesmo navegador em que pediu o acesso.
 
 1. Abra o painel → **Conexões** e copie a **URL do conector** (`https://<app>/api/mcp/<MCP_SECRET>`).
 2. Em [claude.ai](https://claude.ai): **Configurações → Conectores → Adicionar conector personalizado**.
-3. Nome `Central 3C`, cole a URL e deixe as opções de OAuth em branco. Salve.
+3. Nome `3C OS`, cole a URL e deixe as opções de OAuth em branco. Salve.
 4. Numa conversa, ative o conector no menu de ferramentas. Ele fica disponível também no app do celular.
 5. Cole o texto de `docs/claude-instrucoes.md` nas instruções dos seus Projetos e em **Configurações → Perfil → preferências**.
 
@@ -97,7 +97,7 @@ Teste: “salva o contexto da Axial: estamos migrando o front para Next 16”.
 ## 6. ChatGPT (GPT com Actions)
 
 1. Em [chatgpt.com/gpts/editor](https://chatgpt.com/gpts/editor) → **Configurar**.
-2. Nome `Central 3C`. Em **Instruções**, cole `docs/gpt-instrucoes.md`.
+2. Nome `3C OS`. Em **Instruções**, cole `docs/gpt-instrucoes.md`.
 3. **Criar nova ação → Importar de URL**: `https://<app>/api/v1/openapi.json`.
 4. **Autenticação → Chave de API → Bearer** e cole a `API_KEY`.
 5. **Política de privacidade**: `https://<app>/privacidade`.
@@ -105,7 +105,7 @@ Teste: “salva o contexto da Axial: estamos migrando o front para Next 16”.
 
 Teste: “o que tem de novo na Axial?”.
 
-> **Atenção:** a OpenAI vai desligar os GPTs personalizados em **11/12/2026** e as Actions não migram para plugins. Quando o seu plano liberar plugins com servidor MCP próprio, crie um plugin em **Plugins → + → Criar plugin** apontando para a **URL do conector MCP** (a mesma do Claude, sem autenticação). A Central identifica o ChatGPT pelo user-agent; se precisar, acrescente `?fonte=chatgpt` ao final da URL.
+> **Atenção:** a OpenAI vai desligar os GPTs personalizados em **11/12/2026** e as Actions não migram para plugins. Quando o seu plano liberar plugins com servidor MCP próprio, crie um plugin em **Plugins → + → Criar plugin** apontando para a **URL do conector MCP** (a mesma do Claude, sem autenticação). O 3C OS identifica o ChatGPT pelo user-agent; se precisar, acrescente `?fonte=chatgpt` ao final da URL.
 
 ## 7. Testar o MCP com o Inspector
 

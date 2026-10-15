@@ -1,6 +1,6 @@
 # Estudo comparativo e roadmap
 
-_Outubro de 2026._ Onde a Central 3C está em relação a ferramentas de memória para IA e o que vale construir a seguir.
+_Outubro de 2026._ Onde a 3C OS está em relação a ferramentas de memória para IA e o que vale construir a seguir.
 
 ## O cenário
 
@@ -13,11 +13,11 @@ _Outubro de 2026._ Onde a Central 3C está em relação a ferramentas de memóri
 | **Basic Memory** | Notas Markdown locais + grafo de links (Obsidian) | ✅ | ❌ | Dados legíveis, offline | Local; sync na nuvem é pago; consome muitos tokens |
 | **Zep / Graphiti** | Grafo temporal de fatos | via API | via API | Fatos que mudam com o tempo | Complexo para uso pessoal |
 | **OpenMemory (Mem0)** | MCP local | — | — | — | **Descontinuado** em jul/2026 |
-| **Central 3C** | Áreas com resumo vivo + linha do tempo + versões | ✅ MCP | ✅ GPT Actions + plugin Supabase (Work) | Dados seus, auditáveis, custo zero, painel ao vivo, histórico desfazível | Busca só por palavras; sem prazos/tarefas; manutenção própria |
+| **3C OS** | Áreas com resumo vivo + linha do tempo + versões | ✅ MCP | ✅ GPT Actions + plugin Supabase (Work) | Dados seus, auditáveis, custo zero, painel ao vivo, histórico desfazível | Busca só por palavras; sem prazos/tarefas; manutenção própria |
 
-**Conclusão:** nenhuma das ferramentas encontradas cobre Claude **e** ChatGPT (inclusive o Work) com escrita, painel próprio e custo zero. O diferencial da Central é ser **curada e auditável**: resumo canônico por área, fonte de cada escrita e desfazer. O que as outras fazem melhor é **recuperação** (busca semântica), **ciclo de vida** (validade e expiração de fatos) e **rotinas automáticas**.
+**Conclusão:** nenhuma das ferramentas encontradas cobre Claude **e** ChatGPT (inclusive o Work) com escrita, painel próprio e custo zero. O diferencial do 3C OS é ser **curada e auditável**: resumo canônico por área, fonte de cada escrita e desfazer. O que as outras fazem melhor é **recuperação** (busca semântica), **ciclo de vida** (validade e expiração de fatos) e **rotinas automáticas**.
 
-## Boas práticas encontradas (e como a Central se sai)
+## Boas práticas encontradas (e como o 3C OS se sai)
 
 | Prática | Status |
 | --- | --- |
@@ -30,9 +30,9 @@ _Outubro de 2026._ Onde a Central 3C está em relação a ferramentas de memóri
 | Validade no tempo / expiração | ❌ |
 | Busca híbrida (palavra-chave + semântica) | 🟡 só palavra-chave (full-text em português) |
 
-## Visão: a Central como "terceira IA"
+## Visão: o 3C OS como "terceira IA"
 
-A Central deixa de ser só memória das IAs e vira o **ambiente pessoal do Cauã**: agenda, tarefas, notas, informações importantes e anexos num só lugar, lidos e escritos por ele, pelo Claude e pelo ChatGPT. Ela também **toma iniciativa**: lembra, avisa e resume, sem custo.
+O 3C OS deixa de ser só memória das IAs e vira o **ambiente pessoal do Cauã**: agenda, tarefas, notas, informações importantes e anexos num só lugar, lidos e escritos por ele, pelo Claude e pelo ChatGPT. Ela também **toma iniciativa**: lembra, avisa e resume, sem custo.
 
 | Peça | Como fazer de graça |
 | --- | --- |
@@ -65,7 +65,7 @@ A Central deixa de ser só memória das IAs e vira o **ambiente pessoal do Cauã
 ### Fase 4: alcance
 10. **Plugin MCP no ChatGPT** quando o Plus liberar MCP próprio, substituindo o GPT, que será desligado em 11/12/2026.
 11. **Captura rápida pelo celular**: atalho do iOS/Android que manda texto para a inbox via API.
-12. **Multiusuário com OAuth**, se a Central virar produto.
+12. **Multiusuário com OAuth**, se o 3C OS virar produto.
 
 ## Riscos acompanhados
 

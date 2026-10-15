@@ -43,7 +43,7 @@ self.addEventListener("fetch", (event) => {
 self.addEventListener("push", (event) => {
   const data = event.data ? event.data.json() : {};
   event.waitUntil(
-    self.registration.showNotification(data.title || "Central 3C", {
+    self.registration.showNotification(data.title || "3C OS", {
       body: data.body || "",
       icon: "/icons/192",
       badge: "/icons/192",

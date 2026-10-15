@@ -6,7 +6,7 @@ import { SOURCES } from "@/lib/central/schemas";
 import type { CentralService } from "@/lib/central/service";
 
 export const MCP_INSTRUCTIONS = [
-  "Central 3C é a memória compartilhada entre Claude e ChatGPT do usuário.",
+  "3C OS (antes chamado Central 3C) é o ambiente pessoal do Cauã: memória compartilhada entre Claude e ChatGPT, agenda, tarefas e Mural.",
   "Chame obter_briefing no início de conversas sobre projetos, trabalho ou estudos.",
   "Salve registros (salvar_registro) quando houver decisão, progresso ou contexto novo, e atualize o resumo da área só quando algo mudar de verdade.",
   "Nunca arquive nada sem o usuário pedir. Se a área for ambígua, pergunte.",

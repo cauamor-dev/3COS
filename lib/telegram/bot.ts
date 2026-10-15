@@ -10,7 +10,7 @@ interface TelegramUpdate {
 }
 
 const HELP = [
-  "<b>Central 3C no Telegram</b>",
+  "<b>3C OS no Telegram</b>",
   "",
   "Mande qualquer texto: vira nota na inbox.",
   "Com data, vira lembrete: <i>me lembra amanhã às 9h de ligar pro Lott</i>",

@@ -1,11 +1,11 @@
 ---
-name: central-3c
-description: Memória, agenda, tarefas e Mural compartilhados entre ChatGPT e Claude (Central 3C), acessados pelo plugin Supabase. Use sempre que o usuário falar de projetos, trabalho, faculdade, cursos, carreira, compromissos, prazos ou lembretes, pedir para salvar/lembrar/agendar algo, ou perguntar o que tem hoje ou o que há de novo em uma área.
+name: 3c-os
+description: Memória, agenda, tarefas e Mural compartilhados entre ChatGPT e Claude (3C OS, antes chamado Central 3C), acessados pelo plugin Supabase. Use sempre que o usuário falar de projetos, trabalho, faculdade, cursos, carreira, compromissos, prazos ou lembretes, pedir para salvar/lembrar/agendar algo, ou perguntar o que tem hoje ou o que há de novo em uma área.
 ---
 
-# Central 3C via plugin Supabase
+# 3C OS via plugin Supabase
 
-A Central 3C é a fonte única de contexto do Cauã, compartilhada com o Claude. Ela vive no projeto Supabase **central-3c** (ref `lmxnjbplfloezrfomrss`).
+3C OS (antes Central 3C) é o ambiente pessoal e a fonte única de contexto do Cauã, compartilhada com o Claude. Ele vive no projeto Supabase **central-3c** (ref `lmxnjbplfloezrfomrss`).
 
 ## Regra de ouro
 Use o plugin **Supabase** com `execute_sql` **somente** para chamar funções do schema `central`. Nunca rode INSERT, UPDATE, DELETE, DDL ou SELECT direto em tabelas.

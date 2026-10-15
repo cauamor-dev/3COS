@@ -7,9 +7,9 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-geist-sans);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+  --font-heading: var(--font-plex-serif);
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
@@ -40,15 +40,15 @@
 }
 
 :root {
-  --radius: 0.75rem;
-  --background: oklch(0.12 0.008 285);
+  --radius: 0.55rem;
+  --background: oklch(0.1 0.012 290);
   --foreground: oklch(0.96 0.005 285);
   --graphite: oklch(0.17 0.01 285);
-  --card: oklch(0.17 0.012 285);
+  --card: oklch(0.155 0.016 290);
   --card-foreground: oklch(0.96 0.005 285);
   --popover: oklch(0.16 0.012 285);
   --popover-foreground: oklch(0.96 0.005 285);
-  --primary: oklch(0.62 0.24 293);
+  --primary: oklch(0.6 0.25 294);
   --primary-foreground: oklch(0.99 0 0);
   --lilac: oklch(0.82 0.1 300);
   --secondary: oklch(0.22 0.014 285);
@@ -132,56 +132,53 @@
   }
 }
 
-/* Background: fine grid + slow light beams */
+/* Background: starfield, nebula, faint grid and the occasional shooting star */
+.bg-nebula {
+  background:
+    radial-gradient(55% 38% at 50% -6%, oklch(0.6 0.25 294 / 24%), transparent 70%),
+    radial-gradient(35% 30% at 92% 8%, oklch(0.55 0.2 260 / 12%), transparent 70%),
+    radial-gradient(40% 35% at 5% 95%, oklch(0.5 0.22 300 / 10%), transparent 70%);
+}
+
 .bg-grid {
   background-image:
-    linear-gradient(to right, oklch(1 0 0 / 3.5%) 1px, transparent 1px),
-    linear-gradient(to bottom, oklch(1 0 0 / 3.5%) 1px, transparent 1px);
-  background-size: 44px 44px;
-  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+    linear-gradient(to right, oklch(1 0 0 / 2.5%) 1px, transparent 1px),
+    linear-gradient(to bottom, oklch(1 0 0 / 2.5%) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 75% 55% at 50% 0%, #000 30%, transparent 100%);
 }
 
-.bg-glow {
-  background:
-    radial-gradient(60% 40% at 50% -5%, oklch(0.62 0.24 293 / 22%), transparent 70%),
-    radial-gradient(40% 30% at 90% 10%, oklch(0.82 0.1 300 / 8%), transparent 70%);
-}
-
-.beam {
+.star-layer {
   position: absolute;
-  top: -30%;
+  top: 0;
+  left: 0;
   width: 1px;
-  height: 30%;
-  background: linear-gradient(to bottom, transparent, oklch(0.75 0.18 293 / 70%), transparent);
-  filter: drop-shadow(0 0 6px oklch(0.62 0.24 293 / 80%));
-  animation: beam-fall var(--beam-duration, 9s) linear infinite;
-  animation-delay: var(--beam-delay, 0s);
-  opacity: 0;
-}
-
-.beam-horizontal {
-  position: absolute;
-  left: -30%;
   height: 1px;
-  width: 30%;
-  background: linear-gradient(to right, transparent, oklch(0.82 0.1 300 / 55%), transparent);
-  animation: beam-slide var(--beam-duration, 14s) linear infinite;
-  animation-delay: var(--beam-delay, 0s);
+  border-radius: 9999px;
+  animation: twinkle ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+  from { opacity: 0.45; }
+  to { opacity: 1; }
+}
+
+.shooting-star {
+  position: absolute;
+  width: 140px;
+  height: 1px;
+  background: linear-gradient(to left, transparent, oklch(0.85 0.1 300 / 80%), transparent);
+  transform: rotate(-35deg);
   opacity: 0;
+  filter: drop-shadow(0 0 4px oklch(0.6 0.25 294 / 80%));
+  animation: shoot linear infinite;
 }
 
-@keyframes beam-fall {
-  0% { transform: translateY(0); opacity: 0; }
-  10% { opacity: 1; }
-  80% { opacity: 1; }
-  100% { transform: translateY(450%); opacity: 0; }
-}
-
-@keyframes beam-slide {
-  0% { transform: translateX(0); opacity: 0; }
-  10% { opacity: 1; }
-  85% { opacity: 1; }
-  100% { transform: translateX(450%); opacity: 0; }
+@keyframes shoot {
+  0% { opacity: 0; translate: 0 0; }
+  2% { opacity: 1; }
+  6% { opacity: 0; translate: -420px 300px; }
+  100% { opacity: 0; translate: -420px 300px; }
 }
 
 /* Border beam: a light that travels around the border */
@@ -257,21 +254,20 @@
 html[data-motion="off"] *,
 html[data-motion="off"] *::before,
 html[data-motion="off"] *::after,
-html[data-tab="hidden"] .beam,
-html[data-tab="hidden"] .beam-horizontal,
+html[data-tab="hidden"] .star-layer,
+html[data-tab="hidden"] .shooting-star,
 html[data-tab="hidden"] .border-beam::after {
   animation-play-state: paused !important;
 }
 
-html[data-motion="off"] .beam,
-html[data-motion="off"] .beam-horizontal,
+html[data-motion="off"] .shooting-star,
 html[data-motion="off"] .border-beam::after {
   display: none;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .beam,
-  .beam-horizontal,
+  .shooting-star,
+  .star-layer,
   .border-beam::after,
   .live-dot::after {
     display: none;
@@ -286,8 +282,7 @@ html[data-motion="off"] .border-beam::after {
     backdrop-filter: blur(8px);
     -webkit-backdrop-filter: blur(8px);
   }
-  .beam:nth-child(n + 3),
-  .beam-horizontal {
+  .shooting-star:nth-of-type(n + 2) {
     display: none;
   }
 }

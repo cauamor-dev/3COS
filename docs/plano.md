@@ -1,4 +1,4 @@
-# Plano — Central 3C
+# Plano — 3C OS
 
 ## Versões conferidas (out/2026)
 

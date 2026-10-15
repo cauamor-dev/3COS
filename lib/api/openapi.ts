@@ -106,7 +106,7 @@ export function buildOpenApi(appUrl: string) {
   return {
     openapi: "3.1.0",
     info: {
-      title: "Central 3C",
+      title: "3C OS",
       version: "1.0.0",
       description: "Memória compartilhada de projetos, trabalho e estudos entre Claude e ChatGPT.",
     },

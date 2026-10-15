@@ -147,7 +147,7 @@ export function BrainView({ initialEntries }: { initialEntries: GraphEntry[] }) 
       const showLabel = node.kind === "area" || scale > 2.6 || matches?.has(node.id);
       if (showLabel && !dimmed) {
         const fontSize = (node.kind === "area" ? 13 : 11) / Math.max(scale, 0.8);
-        ctx.font = `${node.kind === "area" ? 600 : 400} ${fontSize}px var(--font-geist-sans), system-ui, sans-serif`;
+        ctx.font = `${node.kind === "area" ? 600 : 400} ${fontSize}px "IBM Plex Sans", system-ui, sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
         ctx.fillStyle = node.kind === "area" ? "rgba(245,243,255,0.92)" : "rgba(200,196,220,0.85)";

@@ -75,10 +75,10 @@ export function buildCalendar(entries: Entry[], appUrl: string, now = new Date()
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
-    "PRODID:-//Central 3C//Agenda//PT-BR",
+    "PRODID:-//3C OS//Agenda//PT-BR",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    "X-WR-CALNAME:Central 3C",
+    "X-WR-CALNAME:3C OS",
     "X-WR-TIMEZONE:America/Sao_Paulo",
     "REFRESH-INTERVAL;VALUE=DURATION:PT1H",
     ...entries

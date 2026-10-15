@@ -80,7 +80,7 @@ spawnSync("npx", ["vercel@64.1.0", "deploy", "--prod", "--yes"], { stdio: "inher
 
 await api("sendMessage", {
   chat_id: chatId,
-  text: "Central 3C conectada. Mande /ajuda para ver o que eu faço.",
+  text: "3C OS conectado. Mande /ajuda para ver o que eu faço.",
 });
 console.log("\nPronto! Mande /ajuda para o bot.");
 rl.close();

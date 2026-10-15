@@ -96,7 +96,7 @@ export function PushToggle() {
       {state === "unsupported" && <p className="text-sm text-muted-foreground">Este navegador não suporta notificações push.</p>}
       {state === "denied" && (
         <p className="text-sm text-muted-foreground">
-          Notificações bloqueadas. Libere nos ajustes do aparelho (iPhone: Ajustes → Notificações → Central 3C) e recarregue.
+          Notificações bloqueadas. Libere nos ajustes do aparelho (iPhone: Ajustes → Notificações → 3C OS) e recarregue.
         </p>
       )}
       <div className="flex flex-wrap gap-2">

@@ -105,7 +105,7 @@ export async function unsubscribePushAction(endpoint: string): Promise<ActionRes
 export async function testNotificationAction(): Promise<ActionResult<string>> {
   const member = await getMember();
   if (!member) return { ok: false, error: "Sessão expirada. Entre novamente." };
-  const results = await notify({ title: "Central 3C", body: "Notificações funcionando. Os lembretes chegam aqui.", path: "/" });
+  const results = await notify({ title: "3C OS", body: "Notificações funcionando. Os lembretes chegam aqui.", path: "/" });
   if (results.length === 0) return { ok: false, error: "Nenhum canal configurado." };
   return { ok: true, data: results.map((r) => `${r.channel}: ${r.ok ? "ok" : "falhou"}${r.detail ? ` (${r.detail})` : ""}`).join(" · ") };
 }

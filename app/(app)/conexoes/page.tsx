@@ -60,7 +60,7 @@ async function Connections() {
         </header>
         <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
           <li>claude.ai → Configurações → Conectores → Adicionar conector personalizado.</li>
-          <li>Nome: Central 3C. URL: a de baixo. Deixe OAuth em branco.</li>
+          <li>Nome: 3C OS. URL: a de baixo. Deixe OAuth em branco.</li>
           <li>Ative o conector na conversa (ícone de ferramentas) e cole as instruções nos seus Projetos.</li>
         </ol>
         <CopyField label="URL do conector" value={mcpUrl} secret={serverEnv.mcpSecret} />
@@ -73,7 +73,7 @@ async function Connections() {
           <h2 className="font-medium">ChatGPT · GPT com Actions</h2>
         </header>
         <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
-          <li>chatgpt.com → Explorar GPTs → Criar → Configurar. Nome: Central 3C.</li>
+          <li>chatgpt.com → Explorar GPTs → Criar → Configurar. Nome: 3C OS.</li>
           <li>Cole as instruções. Em Ações → Criar ação → Importar de URL com o OpenAPI.</li>
           <li>Autenticação: Chave de API, tipo Bearer, cole a API key. Compartilhe só com você.</li>
         </ol>

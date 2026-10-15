@@ -2,8 +2,8 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Central 3C",
-    short_name: "Central 3C",
+    name: "3C OS",
+    short_name: "3C OS",
     description: "Memória compartilhada entre Claude e ChatGPT.",
     start_url: "/",
     scope: "/",
