@@ -59,11 +59,23 @@ flowchart LR
 - **Repository** abstrai a persistência: Supabase em produção e uma implementação em memória nos testes.
 - **Tempo real**: o painel assina o Supabase Realtime. Quando Claude ou ChatGPT gravam, o registro entra no feed e um "sinal" percorre a tela até ele.
 
+## Telas
+
+<p align="center">
+  <img src="docs/prints/inicio-celular.jpg" alt="Início no celular" width="260">
+  &nbsp;
+  <img src="docs/prints/inicio-desktop.jpg" alt="Início no PC" width="520">
+</p>
+
 ## Funcionalidades
 
 | | |
 | --- | --- |
-| **Início** | briefing do que mudou desde a última visita, contadores animados, áreas ativas e feed ao vivo com filtro por fonte e área |
+| **Chloe** | assistente no topo do Início: "Bom dia, Cauã. O que você quer hoje?" Entende pedidos em português por texto ou voz ("me lembra daqui a pouco de…", "dia 20 tenho prova às 19h", "o que tenho amanhã?", "anota…", "me avise quando o monitor entrar em promoção") e executa na hora, com desfazer. Com uma chave gratuita de IA, entende pedidos livres e delega para Vega e Nox ([arquitetura](docs/chloe-arquitetura.md)) |
+| **Início** | Painel em blocos (agora, atrasadas, hoje, foco com check rápido, notícia em destaque, semana, Vega, Nox, inbox, vigias de preço, carrossel de notícias) e o feed completo ao vivo com filtros por fonte, autor e área |
+| **Agenda e tarefas** | eventos com recorrência, tarefas com prazo e prioridade, grupos (atrasadas, hoje, semana, sem prazo, vigias de preço) e lembretes por push, Telegram e e-mail, além de resumo diário às 7h |
+| **Mural e notícias** | posts das IAs e notícias coletadas por RSS, ordenadas pelos seus interesses, com leitor dentro do app e "Ler traduzida em português" para fontes em inglês |
+| **Perfil** | trabalho, faculdade, ideias, currículo e como as IAs devem te tratar; vai no briefing de todas as IAs |
 | **Cérebro** | grafo de força interativo (canvas): áreas, registros e ligações por tags; nós brilham com a atividade e partículas correm quando há escrita nova |
 | **Área** | resumo vivo editável em markdown com preview, linha do tempo, status, fixar e arquivar |
 | **Busca** | full-text em português (`websearch_to_tsquery`), filtros por área e tipo; `Ctrl/Cmd + K` ou `/` abrem a paleta de comandos |
@@ -84,6 +96,11 @@ flowchart LR
 | `salvar_registro` | `POST /entries` | cria registro (e a área, se não existir) |
 | `atualizar_resumo` | `PUT /areas/{slug}/summary` | substitui o resumo vivo guardando a versão anterior |
 | `editar_registro` | `PATCH /entries/{id}` | edita ou arquiva um registro |
+| `ver_agenda` | `GET /agenda` | eventos e prazos de um período |
+| `listar_tarefas` | `GET /tasks` | tarefas pendentes, concluídas ou todas |
+| `ver_noticias` | `GET /news` | notícias coletadas, ordenadas pelos interesses |
+
+Quando Vega ou Nox salvam algo com a tag `alerta` ou prioridade alta, o celular recebe a notificação em até 5 minutos (fluxo usado pelo [vigia de preços](docs/vigia-precos.md)).
 
 As leituras são enxutas de propósito: conteúdo longo vem truncado com `truncado: true` e listas são paginadas, porque as IAs têm limite de tamanho de resposta.
 
@@ -136,8 +153,10 @@ app/
   (app)/            páginas autenticadas do painel
   api/mcp/[secret]  servidor MCP
   api/v1/           API REST + openapi.json
-  api/cron/         keepalive do Supabase
+  api/cron/         lembretes, resumo diário, notícias e keepalive
 lib/central/        schemas, operações, serviço e repositórios
+lib/chloe/          regras em português, roteador de modelos e ferramentas da Chloe
+lib/news/           coleta RSS, ranking por interesses e tradução
 supabase/           migrations, config de auth e template de e-mail
 docs/               setup, plano e instruções para as IAs
 tests/              Vitest
