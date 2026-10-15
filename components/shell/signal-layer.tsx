@@ -71,7 +71,7 @@ export function SignalLayer() {
             className="absolute size-2.5 rounded-full"
             style={{
               background: signal.color,
-              boxShadow: `0 0 12px 4px ${signal.color}, 0 0 40px 8px color-mix(in oklch, ${signal.color} 50%, transparent)`,
+              boxShadow: `0 0 12px 4px ${signal.color}, 0 0 40px 8px color-mix(in srgb, ${signal.color} 50%, transparent)`,
             }}
             initial={{ x: signal.from.x, y: signal.from.y, scale: 0.4, opacity: 0 }}
             animate={{ x: signal.to.x, y: signal.to.y, scale: [0.4, 1.3, 1], opacity: [0, 1, 1] }}

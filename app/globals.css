@@ -41,29 +41,30 @@
 
 :root {
   --radius: 0.55rem;
-  --background: oklch(0.1 0.012 290);
-  --foreground: oklch(0.96 0.005 285);
-  --graphite: oklch(0.17 0.01 285);
-  --card: oklch(0.155 0.016 290);
-  --card-foreground: oklch(0.96 0.005 285);
-  --popover: oklch(0.16 0.012 285);
-  --popover-foreground: oklch(0.96 0.005 285);
+  /* Neutral black and graphite surfaces; purple only as accent; other hues only for status. */
+  --background: oklch(0.085 0.003 285);
+  --foreground: oklch(0.97 0.002 285);
+  --graphite: oklch(0.15 0.004 285);
+  --card: oklch(0.135 0.004 285);
+  --card-foreground: oklch(0.97 0.002 285);
+  --popover: oklch(0.15 0.005 285);
+  --popover-foreground: oklch(0.97 0.002 285);
   --primary: oklch(0.6 0.25 294);
   --primary-foreground: oklch(0.99 0 0);
-  --lilac: oklch(0.82 0.1 300);
-  --secondary: oklch(0.22 0.014 285);
-  --secondary-foreground: oklch(0.96 0.005 285);
-  --muted: oklch(0.21 0.012 285);
-  --muted-foreground: oklch(0.72 0.016 285);
-  --accent: oklch(0.24 0.03 293);
-  --accent-foreground: oklch(0.97 0.005 285);
-  --destructive: oklch(0.7 0.19 22);
-  --border: oklch(1 0 0 / 8%);
+  --lilac: oklch(0.8 0.12 296);
+  --secondary: oklch(0.2 0.004 285);
+  --secondary-foreground: oklch(0.97 0.002 285);
+  --muted: oklch(0.19 0.004 285);
+  --muted-foreground: oklch(0.7 0.008 285);
+  --accent: oklch(0.22 0.03 294);
+  --accent-foreground: oklch(0.97 0.002 285);
+  --destructive: oklch(0.68 0.2 25);
+  --border: oklch(1 0 0 / 9%);
   --input: oklch(1 0 0 / 12%);
-  --ring: oklch(0.62 0.24 293 / 70%);
+  --ring: oklch(0.6 0.25 294 / 70%);
   --source-claude: oklch(0.79 0.12 55);
   --source-chatgpt: oklch(0.8 0.13 160);
-  --source-manual: oklch(0.74 0.15 295);
+  --source-manual: oklch(0.92 0.01 285);
   --source-cursor: oklch(0.8 0.1 230);
   color-scheme: dark;
 }
@@ -100,8 +101,8 @@
 
 @layer components {
   .glass {
-    background: color-mix(in oklch, var(--card) 72%, transparent);
-    border: 1px solid oklch(1 0 0 / 8%);
+    background: oklch(0.135 0.004 285 / 0.86);
+    border: 1px solid oklch(1 0 0 / 9%);
     box-shadow:
       inset 0 1px 0 oklch(1 0 0 / 5%),
       0 10px 30px -12px oklch(0 0 0 / 60%);
@@ -117,7 +118,7 @@
   }
   .glass-hover:hover {
     border-color: oklch(0.62 0.24 293 / 35%);
-    background: color-mix(in oklch, var(--card) 85%, transparent);
+    background: oklch(0.16 0.005 285 / 0.92);
   }
 
   .label-mono {
@@ -135,9 +136,8 @@
 /* Background: starfield, nebula, faint grid and the occasional shooting star */
 .bg-nebula {
   background:
-    radial-gradient(55% 38% at 50% -6%, oklch(0.6 0.25 294 / 24%), transparent 70%),
-    radial-gradient(35% 30% at 92% 8%, oklch(0.55 0.2 260 / 12%), transparent 70%),
-    radial-gradient(40% 35% at 5% 95%, oklch(0.5 0.22 300 / 10%), transparent 70%);
+    radial-gradient(55% 34% at 50% -8%, oklch(0.6 0.25 294 / 20%), transparent 70%),
+    radial-gradient(35% 30% at 95% 6%, oklch(0.55 0.2 270 / 8%), transparent 70%);
 }
 
 .bg-grid {

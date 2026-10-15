@@ -437,7 +437,7 @@ function CardIcon({ card }: { card: Card }) {
   return (
     <span
       className="mt-0.5 ml-1 grid size-6 shrink-0 place-items-center rounded-full font-mono text-[11px] font-semibold"
-      style={{ background: `color-mix(in oklch, ${color} 18%, transparent)`, color }}
+      style={{ background: `color-mix(in srgb, ${color} 18%, transparent)`, color }}
     >
       {card.kind === "post" ? <Newspaper className="size-3.5" /> : SOURCE_PERSONA[entry.source].name.charAt(0)}
     </span>

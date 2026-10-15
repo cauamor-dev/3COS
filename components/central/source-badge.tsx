@@ -20,8 +20,8 @@ export function SourceBadge({ source, className }: { source: Source; className?:
       )}
       style={{
         color: SOURCE_COLOR[source],
-        borderColor: `color-mix(in oklch, ${SOURCE_COLOR[source]} 35%, transparent)`,
-        background: `color-mix(in oklch, ${SOURCE_COLOR[source]} 10%, transparent)`,
+        borderColor: `color-mix(in srgb, ${SOURCE_COLOR[source]} 35%, transparent)`,
+        background: `color-mix(in srgb, ${SOURCE_COLOR[source]} 10%, transparent)`,
       }}
     >
       <SourceDot source={source} />

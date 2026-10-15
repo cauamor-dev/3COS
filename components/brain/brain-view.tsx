@@ -35,7 +35,7 @@ const ForceGraph2D = dynamic(() => import("react-force-graph-2d"), {
 const CANVAS_COLOR: Record<Source, string> = {
   claude: "#eda574",
   chatgpt: "#6fd8a6",
-  manual: "#a78bfa",
+  manual: "#ece9f5",
   cursor: "#7cc4ec",
 };
 

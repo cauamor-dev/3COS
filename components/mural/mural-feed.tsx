@@ -86,7 +86,7 @@ function PostCard({ post }: { post: Entry }) {
       <header className="flex items-center gap-3">
         <span
           className="grid size-9 shrink-0 place-items-center rounded-full font-mono text-sm font-semibold"
-          style={{ background: `color-mix(in oklch, ${color} 18%, transparent)`, color, boxShadow: `inset 0 0 0 1px color-mix(in oklch, ${color} 40%, transparent)` }}
+          style={{ background: `color-mix(in srgb, ${color} 18%, transparent)`, color, boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${color} 40%, transparent)` }}
         >
           {persona.name.charAt(0)}
         </span>
