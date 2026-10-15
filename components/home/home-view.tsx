@@ -5,6 +5,7 @@ import { useState, useSyncExternalStore } from "react";
 import { useNow } from "@/hooks/use-now";
 import type { Entry } from "@/lib/central/types";
 import type { NewsItem } from "@/lib/news/store";
+import { ChloeCommand } from "./chloe-command";
 import { HomeBento } from "./home-bento";
 import { HomeFeed, type FeedEvent } from "./home-feed";
 
@@ -47,6 +48,7 @@ export function HomeView(props: {
 
   return (
     <div className="space-y-4">
+      <ChloeCommand now={now} />
       <div className="flex justify-end">
         <div role="tablist" aria-label="Visualização" className="glass flex rounded-full p-1">
           {([

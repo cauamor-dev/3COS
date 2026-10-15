@@ -10,6 +10,9 @@ export interface ParsedDate {
   hasTime: boolean;
 }
 
+/** "Daqui a pouco" means half an hour. */
+const SOON_MS = 30 * 60_000;
+
 const WEEKDAYS = ["domingo", "segunda", "terca", "quarta", "quinta", "sexta", "sabado"];
 
 const strip = (value: string) => value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
@@ -34,7 +37,13 @@ export function parseNaturalDate(input: string, now = new Date()): ParsedDate {
     text = (text.slice(0, match.index) + text.slice(match.index! + match[0].length)).replace(/\s{2,}/g, " ").trim();
   };
 
-  const relative = lower().match(/\bem (\d+) ?(min|minutos?|h|horas?|dias?)\b/);
+  const soon = lower().match(/\bdaqui a pouco\b/);
+  if (soon) {
+    remove(soon);
+    return { text: cleanup(text), at: new Date(now.getTime() + SOON_MS).toISOString(), hasTime: true };
+  }
+
+  const relative = lower().match(/\b(?:em|daqui a|daqui) (\d+) ?(min|minutos?|h|horas?|dias?)\b/);
   if (relative) {
     const amount = Number(relative[1]);
     const unit = relative[2];
@@ -67,6 +76,13 @@ export function parseNaturalDate(input: string, now = new Date()): ParsedDate {
     target = { year, month: Number(explicit[2]) - 1, day: Number(explicit[1]) };
     if (!explicit[3] && Date.UTC(year, target.month, target.day) < Date.UTC(today.year, today.month, today.day)) target.year += 1;
     remove(explicit);
+  }
+
+  const monthDay = !target && lower().match(/\bdia (\d{1,2})\b(?!\/)/);
+  if (monthDay && Number(monthDay[1]) >= 1 && Number(monthDay[1]) <= 31) {
+    const day = Number(monthDay[1]);
+    target = { year: today.year, month: today.month + (day < today.day ? 1 : 0), day };
+    remove(monthDay);
   }
 
   const time = lower().match(/\b(?:as |às |a partir das )?(\d{1,2})(?:h(\d{2})?|:(\d{2}))(?:\s?h(?:oras?)?)?\b/);
