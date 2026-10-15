@@ -25,7 +25,13 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
           <Link
             key={href}
             href={href}
-            onClick={onNavigate}
+            onClick={(event) => {
+              if (isActive(pathname, href)) {
+                event.preventDefault();
+                window.scrollTo({ top: 0, behavior: "smooth" });
+              }
+              onNavigate?.();
+            }}
             className={cn(
               "flex items-center gap-3 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors duration-150 hover:bg-white/5 hover:text-foreground",
               isActive(pathname, href) && "bg-primary/12 text-foreground shadow-[inset_0_0_0_1px_oklch(0.62_0.24_293/0.25)]",

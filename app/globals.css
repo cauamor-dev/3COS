@@ -76,10 +76,16 @@
   html {
     @apply font-sans;
     -webkit-tap-highlight-color: transparent;
+    -webkit-text-size-adjust: 100%;
+    touch-action: manipulation;
+    overflow-x: hidden;
+    overscroll-behavior: none;
   }
   body {
     @apply bg-background text-foreground;
     min-height: 100dvh;
+    overflow-x: hidden;
+    overscroll-behavior: none;
   }
   button:not(:disabled),
   [role="button"]:not(:disabled) {

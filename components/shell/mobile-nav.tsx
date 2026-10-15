@@ -23,7 +23,7 @@ export function MobileHeader() {
   const [open, setOpen] = useState(false);
 
   return (
-    <header className="glass sticky top-0 z-30 flex items-center justify-between rounded-none border-x-0 border-t-0 px-4 py-3 pt-[max(0.75rem,env(safe-area-inset-top))] md:hidden">
+    <header className="sticky top-0 z-40 flex items-center justify-between border-b border-white/[0.07] bg-background/95 px-4 pt-[calc(env(safe-area-inset-top)+0.6rem)] pb-2.5 backdrop-blur-md md:hidden">
       <Link href="/">
         <Logo />
       </Link>
@@ -39,7 +39,10 @@ export function MobileHeader() {
             <Menu />
           </Button>
         </SheetTrigger>
-        <SheetContent side="right" className="flex w-72 flex-col gap-0 border-l bg-background/95 p-4 backdrop-blur-xl">
+        <SheetContent
+          side="right"
+          className="flex w-72 flex-col gap-0 border-l bg-background/95 p-4 pt-[calc(env(safe-area-inset-top)+1rem)] pb-[calc(env(safe-area-inset-bottom)+1rem)] backdrop-blur-xl"
+        >
           <SheetHeader className="mb-4 p-0">
             <SheetTitle className="sr-only">Menu</SheetTitle>
             <Logo />
@@ -68,6 +71,13 @@ export function BottomNav() {
         <Link
           key={href}
           href={href}
+          onClick={(event) => {
+            // Tapping the tab you're already on scrolls back to the top, like native apps.
+            if (isActive(pathname, href)) {
+              event.preventDefault();
+              window.scrollTo({ top: 0, behavior: "smooth" });
+            }
+          }}
           className={cn(
             "flex flex-col items-center gap-1 rounded-xl py-2 text-[11px] text-muted-foreground transition-colors duration-150",
             isActive(pathname, href) && "bg-primary/15 text-foreground",

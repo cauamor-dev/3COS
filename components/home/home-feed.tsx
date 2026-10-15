@@ -24,7 +24,10 @@ import { SOURCE_COLOR, SOURCE_PERSONA, TYPE_LABEL } from "@/components/central/l
 import { TimeAgo } from "@/components/central/time-ago";
 import { useLiveEvents } from "@/components/providers/central-provider";
 import { useNow } from "@/hooks/use-now";
+import type { Source } from "@/lib/central/schemas";
 import type { Entry } from "@/lib/central/types";
+
+const AUTHORS: Source[] = ["claude", "chatgpt", "manual"];
 
 export interface FeedEvent {
   key: string;
@@ -92,6 +95,7 @@ export function HomeFeed({ events, tasks, recent, inboxCount, serverNow }: {
   const now = useNow() ?? serverNow;
   const [filter, setFilter] = useState<Filter>("tudo");
   const [topic, setTopic] = useState<string | null>(null);
+  const [author, setAuthor] = useState<Source | null>(null);
   const [showQuiet, setShowQuiet] = useState(false);
   const [live, setLive] = useState<Entry[]>([]);
   const lastVisit = useSyncExternalStore(noopSubscribe, readLastVisit, () => null);
@@ -158,6 +162,7 @@ export function HomeFeed({ events, tasks, recent, inboxCount, serverNow }: {
 
   const filtered = cards.filter((card) => {
     if (topic && card.entry.area.slug !== topic) return false;
+    if (author && card.entry.source !== author) return false;
     if (filter === "urgente") return card.tone === "late" || card.tone === "today";
     if (filter === "agenda") return card.kind === "event";
     if (filter === "tarefas") return card.kind === "task";
@@ -191,7 +196,7 @@ export function HomeFeed({ events, tasks, recent, inboxCount, serverNow }: {
     <div className="space-y-5">
       <NowCard cards={cards} now={now} inboxCount={inboxCount} lastVisit={lastVisit} />
 
-      <div className="sticky top-[calc(env(safe-area-inset-top)+3.75rem)] z-20 -mx-4 space-y-2 bg-background/80 px-4 py-2 backdrop-blur-md md:top-0">
+      <div className="sticky top-[calc(env(safe-area-inset-top)+3.9rem)] z-20 -mx-4 space-y-2 bg-background/80 px-4 py-2 backdrop-blur-md md:top-0">
         <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
           {FILTERS.map((item) => (
             <Chip key={item.id} active={filter === item.id} onClick={() => setFilter(item.id)}>
@@ -200,9 +205,25 @@ export function HomeFeed({ events, tasks, recent, inboxCount, serverNow }: {
             </Chip>
           ))}
         </div>
-        {topics.length > 1 && (
-          <div className="no-scrollbar flex gap-1.5 overflow-x-auto">
-            {topics.map(([slug, info]) => (
+        <div className="no-scrollbar flex items-center gap-1.5 overflow-x-auto">
+          {AUTHORS.map((source) => (
+            <button
+              key={source}
+              type="button"
+              onClick={() => setAuthor(author === source ? null : source)}
+              aria-pressed={author === source}
+              className={cn(
+                "flex h-8 shrink-0 items-center gap-1.5 rounded-full border px-2.5 text-[12px] text-muted-foreground transition-colors duration-150",
+                author === source && "border-white/30 bg-white/10 text-foreground",
+              )}
+            >
+              <span className="size-2 rounded-full" style={{ background: SOURCE_COLOR[source] }} />
+              {SOURCE_PERSONA[source].name}
+            </button>
+          ))}
+          {topics.length > 1 && <span className="mx-1 h-4 w-px shrink-0 bg-white/10" />}
+          {topics.length > 1 &&
+            topics.map(([slug, info]) => (
               <button
                 key={slug}
                 type="button"
@@ -215,8 +236,7 @@ export function HomeFeed({ events, tasks, recent, inboxCount, serverNow }: {
                 #{slug} <span className="opacity-60">{info.count}</span>
               </button>
             ))}
-          </div>
-        )}
+        </div>
       </div>
 
       <ol className="space-y-2.5">

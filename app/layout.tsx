@@ -24,6 +24,9 @@ export const viewport: Viewport = {
   colorScheme: "dark",
   width: "device-width",
   initialScale: 1,
+  // App feel on the installed PWA: no pinch zoom or sideways panning.
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
 };
 
