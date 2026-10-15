@@ -68,7 +68,7 @@ flowchart LR
 | **Histórico** | todas as versões de um resumo ou registro, com restauração reversível |
 | **Conexões** | URL do conector MCP, URL do OpenAPI, API key mascarada e instruções prontas para colar |
 | **Dados** | exportação em JSON e em Markdown (.zip), importação de `.md` ou texto colado |
-| **PWA** | instalável no Android e iOS, login por código de 6 dígitos para funcionar dentro do app |
+| **PWA** | instalável no Android e iOS, login por magic link (e por código de 6 dígitos quando há SMTP próprio) |
 
 ![Cérebro](docs/prints/cerebro.png)
 
@@ -130,7 +130,7 @@ npx @modelcontextprotocol/inspector --cli http://localhost:3000/api/mcp/<MCP_SEC
 - **Ferramenta extra `ler_registro`**: como as leituras truncam conteúdo longo, a IA precisa de um caminho para o texto completo.
 - **Multiusuário no futuro**: o acesso passa pela tabela `members` e por RLS, e o serviço recebe o repositório por injeção. Virar multiusuário é adicionar `owner_id` e trocar o segredo por OAuth.
 - **Rate limit em memória** por IP: suficiente para uso pessoal; cada instância serverless mantém o próprio contador.
-- **Login por código além do link**: no iPhone, o link do e-mail abre no Safari, fora do PWA instalado; o código resolve.
+- **Login por código além do link**: no iPhone, o link do e-mail abre no Safari, fora do PWA instalado; o código resolve. No Supabase Free o template com código exige SMTP próprio, então o link é o padrão.
 
 ## Estrutura
 

@@ -4,8 +4,11 @@ project_id = "central-3c"
 
 [auth]
 enabled = true
-site_url = "http://localhost:3000"
-additional_redirect_urls = ["http://localhost:3000/auth/callback"]
+site_url = "https://central3c-caua.vercel.app"
+additional_redirect_urls = [
+  "https://central3c-caua.vercel.app/auth/callback",
+  "http://localhost:3000/auth/callback",
+]
 enable_signup = true
 
 [auth.email]
@@ -13,10 +16,8 @@ enable_signup = true
 otp_length = 6
 otp_expiry = 3600
 
-[auth.email.template.magic_link]
-subject = "Seu acesso à Central 3C"
-content_path = "./supabase/templates/magic-link.html"
-
-[auth.email.template.confirmation]
-subject = "Seu acesso à Central 3C"
-content_path = "./supabase/templates/magic-link.html"
+# Custom templates need a custom SMTP provider on the Free plan. To use the
+# template with the 6-digit code, configure [auth.email.smtp] and uncomment:
+# [auth.email.template.magic_link]
+# subject = "Seu acesso à Central 3C"
+# content_path = "./supabase/templates/magic-link.html"

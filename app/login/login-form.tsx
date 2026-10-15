@@ -36,8 +36,8 @@ export function LoginForm({ next, linkError, blockedEmail }: { next: string; lin
         <div className="flex items-start gap-3 rounded-lg border border-primary/25 bg-primary/10 p-3 text-sm">
           <Mail className="mt-0.5 size-4 shrink-0 text-lilac" />
           <p>
-            Enviamos um link e um código para <span className="font-medium">{emailState.email}</span>. Clique no link ou
-            digite o código aqui (melhor opção no app instalado).
+            Enviamos um link de acesso para <span className="font-medium">{emailState.email}</span>. Abra o link neste
+            mesmo navegador. Se o e-mail trouxer um código, você também pode digitá-lo aqui.
           </p>
         </div>
         <div className="space-y-2">

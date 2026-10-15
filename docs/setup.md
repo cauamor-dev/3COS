@@ -78,7 +78,9 @@ Edite `supabase/config.toml` trocando `http://localhost:3000` pela URL de produ�
 npx supabase config push
 ```
 
-Isso também instala o template de e-mail com **link + código de 6 dígitos**. O código é o melhor caminho no app instalado (PWA) do iPhone, porque o link abre no Safari, fora do app.
+Abra o link do e-mail no mesmo navegador em que pediu o acesso.
+
+> **Código de 6 dígitos (opcional):** o plano Free só permite editar templates de e-mail com um SMTP próprio (ex.: Resend, gratuito). Com SMTP configurado em *Authentication → Emails → SMTP Settings*, descomente o bloco `[auth.email.template.magic_link]` do `config.toml` e rode `npx supabase config push`: o e-mail passa a trazer também o código, que o painel aceita. É o melhor caminho no PWA do iPhone, onde o link abre no Safari, fora do app.
 
 > Opcional: depois do primeiro login, desligue cadastros novos em *Authentication → Sign In / Providers → Allow new users to sign up*. O RLS já bloqueia qualquer outro e-mail, mas assim nem a conta é criada.
 
