@@ -111,23 +111,25 @@ export function ChloeCommand({ now }: { now: number }) {
           send();
         }}
       >
-        <input
-          ref={input}
-          value={text}
-          onChange={(event) => setText(event.target.value)}
-          placeholder={listening ? "Ouvindo…" : hasFiles ? "Legenda (opcional)" : "Peça algo: lembrete, evento, nota, agenda…"}
-          aria-label="Pedido para a Chloe"
-          enterKeyHint="send"
-          maxLength={500}
-          className="h-12 min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-base outline-none transition-colors duration-150 placeholder:text-muted-foreground/70 focus:border-primary/60"
-        />
-        <AttachmentClip
-          attachments={attachments}
-          className={cn(
-            "grid size-12 shrink-0 place-items-center rounded-xl border border-white/10 text-muted-foreground transition-colors duration-150 hover:border-primary/50 hover:text-foreground",
-            hasFiles && "border-primary/60 text-lilac",
-          )}
-        />
+        <div className="relative min-w-0 flex-1">
+          <input
+            ref={input}
+            value={text}
+            onChange={(event) => setText(event.target.value)}
+            placeholder={listening ? "Ouvindo…" : hasFiles ? "Legenda (opcional)" : "Peça algo: lembrete, evento, nota, agenda…"}
+            aria-label="Pedido para a Chloe"
+            enterKeyHint="send"
+            maxLength={500}
+            className="h-12 w-full min-w-0 rounded-xl border border-white/10 bg-white/[0.04] pr-12 pl-4 text-base outline-none transition-colors duration-150 placeholder:text-muted-foreground/70 focus:border-primary/60"
+          />
+          <AttachmentClip
+            attachments={attachments}
+            className={cn(
+              "absolute top-1/2 right-1.5 grid size-9 -translate-y-1/2 place-items-center rounded-lg text-muted-foreground transition-colors duration-150 hover:text-foreground",
+              hasFiles && "text-lilac",
+            )}
+          />
+        </div>
         {canListen && (
           <button
             type="button"
