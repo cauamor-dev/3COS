@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bearerToken, safeEqual } from "@/lib/http/auth";
+import { bearerToken, safeEqual, safeRedirectPath } from "@/lib/http/auth";
 import { createRateLimiter } from "@/lib/http/rate-limit";
 
 describe("safeEqual", () => {
@@ -29,5 +29,17 @@ describe("rate limit", () => {
     expect(blocked.retryAfterSeconds).toBe(1);
     expect(check("outra", 200).ok).toBe(true);
     expect(check("k", 1100).ok).toBe(true);
+  });
+});
+
+describe("safeRedirectPath", () => {
+  it("mantém caminhos internos", () => {
+    expect(safeRedirectPath("/areas/axial?x=1#y")).toBe("/areas/axial?x=1#y");
+  });
+
+  it("bloqueia destinos fora do app", () => {
+    for (const value of ["//evil.com", "/\\evil.com", "/\\/evil.com", "https://evil.com", "evil.com", "/\tevil", null, undefined]) {
+      expect(safeRedirectPath(value)).toBe("/");
+    }
   });
 });

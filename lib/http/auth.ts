@@ -21,3 +21,10 @@ export function clientIp(request: Request): string {
     "unknown"
   );
 }
+
+/** Internal path to go to after login; anything that could leave the app ("//x", "/\x", "https:") becomes "/". */
+export function safeRedirectPath(value: unknown): string {
+  if (typeof value !== "string" || !value.startsWith("/")) return "/";
+  if (/^\/[\\/]/.test(value) || /[\u0000-\u001f\\]/.test(value)) return "/";
+  return value;
+}

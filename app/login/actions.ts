@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { isAllowedEmail } from "@/lib/auth";
 import { serverEnv } from "@/lib/env";
+import { safeRedirectPath } from "@/lib/http/auth";
 import { createUserClient } from "@/lib/supabase/server";
 
 export interface LoginState {
@@ -14,10 +15,7 @@ export interface LoginState {
 
 const emailSchema = z.email();
 
-function safeNext(value: FormDataEntryValue | null) {
-  const next = typeof value === "string" ? value : "/";
-  return next.startsWith("/") && !next.startsWith("//") ? next : "/";
-}
+const safeNext = (value: FormDataEntryValue | null) => safeRedirectPath(value);
 
 export async function sendLoginEmail(_: LoginState, formData: FormData): Promise<LoginState> {
   const parsed = emailSchema.safeParse(String(formData.get("email") ?? "").trim().toLowerCase());
