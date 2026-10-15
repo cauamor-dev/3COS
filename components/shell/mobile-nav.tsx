@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "cn";
-import { Brain, Home, Menu, Plus, Search } from "lucide-react";
+import { CalendarDays, CheckSquare, Home, Menu, Newspaper, Plus, Search } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -14,8 +14,9 @@ import { SidebarFooter, SidebarNav } from "./sidebar";
 
 const TABS = [
   { href: "/", label: "Início", icon: Home },
-  { href: "/cerebro", label: "Cérebro", icon: Brain },
-  { href: "/buscar", label: "Buscar", icon: Search },
+  { href: "/agenda", label: "Agenda", icon: CalendarDays },
+  { href: "/tarefas", label: "Tarefas", icon: CheckSquare },
+  { href: "/mural", label: "Mural", icon: Newspaper },
 ] as const;
 
 export function MobileHeader() {
@@ -26,6 +27,12 @@ export function MobileHeader() {
       <Link href="/">
         <Logo />
       </Link>
+      <div className="flex items-center gap-1">
+      <Button variant="ghost" size="icon" asChild>
+        <Link href="/buscar" aria-label="Buscar">
+          <Search />
+        </Link>
+      </Button>
       <Sheet open={open} onOpenChange={setOpen}>
         <SheetTrigger asChild>
           <Button variant="ghost" size="icon" aria-label="Abrir menu">
@@ -43,6 +50,7 @@ export function MobileHeader() {
           <SidebarFooter />
         </SheetContent>
       </Sheet>
+      </div>
     </header>
   );
 }
@@ -54,7 +62,7 @@ export function BottomNav() {
   return (
     <nav
       aria-label="Navegação principal"
-      className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 grid grid-cols-4 rounded-2xl p-1.5 md:hidden"
+      className="glass fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-30 grid grid-cols-5 rounded-2xl p-1.5 md:hidden"
     >
       {TABS.map(({ href, label, icon: Icon }) => (
         <Link

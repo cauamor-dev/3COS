@@ -62,7 +62,7 @@ export function AreaControls({ area }: { area: Area }) {
           <History /> Histórico
         </Link>
       </Button>
-      <Button size="sm" onClick={() => openQuickEntry(area.slug)}>
+      <Button size="sm" onClick={() => openQuickEntry({ areaSlug: area.slug })}>
         <Plus /> Registro
       </Button>
 

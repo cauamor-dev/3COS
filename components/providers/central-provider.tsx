@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import type { EntryType } from "@/lib/central/schemas";
 import type { Area, Entry } from "@/lib/central/types";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
@@ -23,9 +24,15 @@ interface CentralContextValue {
   connection: ConnectionInfo;
   live: boolean;
   subscribe(listener: Listener): () => void;
-  quickEntry: { open: boolean; areaSlug?: string };
-  openQuickEntry(areaSlug?: string): void;
+  quickEntry: QuickEntryState;
+  openQuickEntry(preset?: { areaSlug?: string; type?: EntryType }): void;
   closeQuickEntry(): void;
+}
+
+interface QuickEntryState {
+  open: boolean;
+  areaSlug?: string;
+  type?: EntryType;
 }
 
 const CentralContext = createContext<CentralContextValue | null>(null);
@@ -44,7 +51,7 @@ export function CentralProvider({
   const router = useRouter();
   const [liveAreas, setLiveAreas] = useState<Area[]>([]);
   const [live, setLive] = useState(false);
-  const [quickEntry, setQuickEntry] = useState<{ open: boolean; areaSlug?: string }>({ open: false });
+  const [quickEntry, setQuickEntry] = useState<QuickEntryState>({ open: false });
   const listeners = useRef(new Set<Listener>());
   const areasRef = useRef(initialAreas);
   const refreshTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -107,7 +114,10 @@ export function CentralProvider({
     };
   }, []);
 
-  const openQuickEntry = useCallback((areaSlug?: string) => setQuickEntry({ open: true, areaSlug }), []);
+  const openQuickEntry = useCallback(
+    (preset?: { areaSlug?: string; type?: EntryType }) => setQuickEntry({ open: true, ...preset }),
+    [],
+  );
   const closeQuickEntry = useCallback(() => setQuickEntry((current) => ({ ...current, open: false })), []);
 
   return (

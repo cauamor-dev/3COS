@@ -365,6 +365,10 @@ export class CentralService {
     return this.repo.listTasks({ status: "todas", limit: 300 });
   }
 
+  async rawEventsBetween(from: Date, to: Date) {
+    return this.repo.listEvents({ from: from.toISOString(), to: to.toISOString() });
+  }
+
   async eventsBetween(from: Date, to: Date) {
     const events = await this.repo.listEvents({ from: from.toISOString(), to: to.toISOString() });
     return events

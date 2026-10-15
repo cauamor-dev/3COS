@@ -14,6 +14,14 @@ export const SOURCE_COLOR: Record<Source, string> = {
   cursor: "var(--source-cursor)",
 };
 
+// Personas of the Time CCC, shown on the Mural.
+export const SOURCE_PERSONA: Record<Source, { name: string; handle: string }> = {
+  claude: { name: "Vega", handle: "@claude" },
+  chatgpt: { name: "Nox", handle: "@chatgpt" },
+  manual: { name: "Você", handle: "@painel" },
+  cursor: { name: "Cursor", handle: "@cursor" },
+};
+
 export const KIND_LABEL: Record<AreaKind, string> = {
   projeto: "Projeto",
   trabalho: "Trabalho",

@@ -6,6 +6,7 @@ import { CopyBlock, CopyField } from "@/components/connections/copy-field";
 import { PageHeader } from "@/components/shell/page-header";
 import { requireMember } from "@/lib/auth";
 import { serverEnv } from "@/lib/env";
+import { derivedSecret } from "@/lib/http/derived-secret";
 
 export const metadata: Metadata = { title: "Conexões" };
 
@@ -16,6 +17,8 @@ async function Connections() {
   const [gptText, claudeText] = await Promise.all([readDoc("gpt-instrucoes.md"), readDoc("claude-instrucoes.md")]);
   const mcpUrl = `${serverEnv.appUrl}/api/mcp/${serverEnv.mcpSecret}`;
   const openApiUrl = `${serverEnv.appUrl}/api/v1/openapi.json`;
+  const icsToken = derivedSecret(serverEnv.mcpSecret, "ics");
+  const icsUrl = `${serverEnv.appUrl}/api/agenda/${icsToken}.ics`;
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
@@ -46,6 +49,19 @@ async function Connections() {
         <CopyField label="URL do OpenAPI" value={openApiUrl} />
         <CopyField label="API key" value={serverEnv.apiKey} secret={serverEnv.apiKey} />
         <CopyBlock label="Instruções do GPT" text={gptText.trim()} />
+      </section>
+
+      <section className="glass space-y-4 rounded-2xl p-5 lg:col-span-2">
+        <header className="flex items-center gap-2">
+          <span className="size-2 rounded-full bg-lilac" />
+          <h2 className="font-medium">Agenda no calendário do celular</h2>
+        </header>
+        <ol className="list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+          <li>Google Agenda (no computador): Outras agendas → + → Do URL → cole o link abaixo. Aparece no app do celular em alguns minutos.</li>
+          <li>iPhone: Ajustes → Calendário → Contas → Adicionar conta → Outra → Adicionar calendário assinado → cole o link.</li>
+          <li>Os calendários atualizam sozinhos (o Google pode levar algumas horas). É só leitura: crie e edite pela Central ou pelas IAs.</li>
+        </ol>
+        <CopyField label="link da agenda (ICS)" value={icsUrl} secret={icsToken} />
       </section>
 
       <section className="glass space-y-3 rounded-2xl p-5 lg:col-span-2">
