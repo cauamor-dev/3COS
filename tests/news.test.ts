@@ -70,6 +70,7 @@ describe("leitor de feeds", () => {
   it("limpa HTML com atributos e entidades numéricas, mas preserva texto entre < >", () => {
     expect(stripHtml('<p class="x">Caf&#233; &amp; <a href="/y">c&#xF3;digo</a></p>')).toBe("Café & código");
     expect(stripHtml("Next.js <novidades>")).toBe("Next.js <novidades>");
+    expect(stripHtml('<button class="lightbox-trigger" type="button">Abrir</button> Texto')).toBe("Abrir Texto");
   });
 });
 

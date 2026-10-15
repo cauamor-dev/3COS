@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { markNewsReadAction, saveNewsToMuralAction } from "@/app/(app)/news-actions";
 import type { NewsItem } from "@/lib/news/store";
@@ -12,6 +12,8 @@ export function useNewsActions() {
   const [saved, setSaved] = useState<Set<string>>(() => new Set());
   const [reading, setReading] = useState<NewsItem | null>(null);
   const [, startTransition] = useTransition();
+  // Stable, because the reader keys its history entry on it.
+  const closeReader = useCallback(() => setReading(null), []);
 
   const add = (set: Set<string>, id: string) => new Set(set).add(id);
 
@@ -78,7 +80,7 @@ export function useNewsActions() {
 
   return {
     reading,
-    closeReader: () => setReading(null),
+    closeReader,
     reader,
     isRead: (item: NewsItem) => !!item.read_at || read.has(item.id),
     isDismissed: (item: NewsItem) => dismissed.has(item.id),

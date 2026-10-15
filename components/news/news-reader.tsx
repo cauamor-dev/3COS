@@ -1,6 +1,7 @@
 "use client";
 
-import { Bookmark, BookmarkCheck, ExternalLink, Languages, Share2 } from "lucide-react";
+import { Bookmark, BookmarkCheck, ChevronLeft, ExternalLink, Languages, Share2 } from "lucide-react";
+import { useEffect, useRef } from "react";
 import { TimeAgo } from "@/components/central/time-ago";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "@/components/ui/sheet";
 import type { NewsItem } from "@/lib/news/store";
@@ -10,9 +11,52 @@ import type { NewsActions } from "./use-news-actions";
 /** In-app reading panel: image, summary and the way out to the source (translated or not). */
 export function NewsReader({ actions }: { actions: NewsActions }) {
   const item = actions.reading;
+  const open = !!item;
+  const { closeReader } = actions;
+  const touch = useRef<{ x: number; y: number } | null>(null);
+
+  // The reader gets its own history entry, so the phone's back gesture/button closes it
+  // instead of leaving the page (in the installed iPhone app there is no back gesture at all).
+  useEffect(() => {
+    if (!open) return;
+    window.history.pushState({ ...window.history.state, newsReader: true }, "");
+    const onPop = () => closeReader();
+    window.addEventListener("popstate", onPop);
+    return () => {
+      window.removeEventListener("popstate", onPop);
+      if (window.history.state?.newsReader) window.history.back();
+    };
+  }, [open, closeReader]);
+
   return (
-    <Sheet open={!!item} onOpenChange={(open) => !open && actions.closeReader()}>
-      <SheetContent side="right" className="gap-0 overflow-y-auto border-l bg-background/95 p-0 backdrop-blur-xl data-[side=right]:w-full data-[side=right]:sm:max-w-md">
+    <Sheet open={open} onOpenChange={(next) => !next && closeReader()}>
+      <SheetContent
+        side="right"
+        showCloseButton={false}
+        onTouchStart={(event) => {
+          const t = event.touches[0];
+          touch.current = { x: t.clientX, y: t.clientY };
+        }}
+        onTouchEnd={(event) => {
+          const start = touch.current;
+          touch.current = null;
+          if (!start) return;
+          const t = event.changedTouches[0];
+          const dx = t.clientX - start.x;
+          // Swipe right to go back, like any iPhone screen.
+          if (dx > 80 && Math.abs(t.clientY - start.y) < dx * 0.6) closeReader();
+        }}
+        className="gap-0 overflow-y-auto overscroll-contain border-l bg-background/95 p-0 backdrop-blur-xl data-[side=right]:w-full data-[side=right]:sm:max-w-md"
+      >
+        <div className="sticky top-0 z-10 flex items-center border-b bg-background/90 px-2 pt-[env(safe-area-inset-top)] backdrop-blur-md">
+          <button
+            type="button"
+            onClick={closeReader}
+            className="flex h-12 items-center gap-1 rounded-lg px-2 text-[15px] text-lilac active:opacity-60"
+          >
+            <ChevronLeft className="size-5" /> Voltar
+          </button>
+        </div>
         {item && <Story item={item} actions={actions} />}
       </SheetContent>
     </Sheet>
@@ -28,7 +72,7 @@ function Story({ item, actions }: { item: NewsItem; actions: NewsActions }) {
         // eslint-disable-next-line @next/next/no-img-element -- images come from any news site
         <img src={item.image_url} alt="" referrerPolicy="no-referrer" className="aspect-[16/9] w-full border-b object-cover" />
       )}
-      <div className="space-y-3 p-5 pt-[max(1.25rem,env(safe-area-inset-top))]">
+      <div className="space-y-3 p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
         <p className="flex flex-wrap items-center gap-x-2 font-mono text-[11px] text-muted-foreground">
           <span className="text-foreground/80">{item.source}</span>
           <span>#{item.topic.toLowerCase()}</span>

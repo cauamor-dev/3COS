@@ -22,7 +22,7 @@ const parser = new XMLParser({
 
 // Only real HTML tags are removed, so a title like "Next.js <novidades>" survives decoding.
 const HTML_TAG =
-  /<\/?(?:a|abbr|article|b|blockquote|br|cite|code|div|em|figcaption|figure|footer|h[1-6]|header|hr|i|iframe|img|li|mark|ol|p|path|picture|pre|s|section|small|source|span|strong|sub|sup|svg|table|tbody|td|th|thead|time|tr|u|ul|video)(?=[\s/>])[^>]*>/gi;
+  /<\/?(?:a|abbr|article|aside|audio|b|big|blockquote|br|button|canvas|caption|center|cite|code|dd|del|dialog|div|dl|dt|em|embed|figcaption|figure|font|footer|form|h[1-6]|header|hr|i|iframe|img|input|ins|label|li|main|mark|nav|noscript|ol|option|p|path|picture|pre|q|s|section|select|small|source|span|strong|sub|sup|svg|table|tbody|td|template|textarea|tfoot|th|thead|time|tr|track|u|ul|video|wbr)(?=[\s/>])[^>]*>/gi;
 
 const ENTITIES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
 
