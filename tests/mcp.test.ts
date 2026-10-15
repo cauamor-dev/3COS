@@ -90,3 +90,25 @@ describe("ferramentas", () => {
     expect(body.result.content[0].text).toContain("listar_areas");
   });
 });
+
+describe("fonte pelo cliente", () => {
+  it("identifica o ChatGPT pelo user-agent", async () => {
+    const request = new Request(`https://central.exemplo.com/api/mcp/${TEST_ENV.MCP_SECRET}`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+        "mcp-protocol-version": "2025-06-18",
+        "user-agent": "openai-mcp/1.0.0",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 99,
+        method: "tools/call",
+        params: { name: "salvar_registro", arguments: { titulo: "Do ChatGPT" } },
+      }),
+    });
+    await (await POST(request, routeContext({ secret: TEST_ENV.MCP_SECRET }))).text();
+    expect(memory.repo.entries.at(-1)?.source).toBe("chatgpt");
+  });
+});
