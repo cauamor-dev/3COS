@@ -61,10 +61,24 @@ flowchart LR
 
 ## Telas
 
+<sub>Prints do modo demo, com dados fictícios.</sub>
+
 <p align="center">
-  <img src="docs/prints/inicio-celular.jpg" alt="Início no celular" width="260">
+  <img src="docs/prints/chloe-celular.jpg" alt="Chloe executando um pedido no celular" width="240">
   &nbsp;
-  <img src="docs/prints/inicio-desktop.jpg" alt="Início no PC" width="520">
+  <img src="docs/prints/agenda-celular.jpg" alt="Agenda no celular" width="240">
+  &nbsp;
+  <img src="docs/prints/tarefas-celular.jpg" alt="Tarefas no celular" width="240">
+</p>
+
+<p align="center">
+  <img src="docs/prints/painel-desktop.jpg" alt="Início em blocos no PC" width="760">
+</p>
+
+<p align="center">
+  <img src="docs/prints/cerebro-desktop.jpg" alt="Cérebro: grafo de áreas e registros" width="375">
+  &nbsp;
+  <img src="docs/prints/perfil-desktop.jpg" alt="Perfil usado no briefing das IAs" width="375">
 </p>
 
 ## Funcionalidades
