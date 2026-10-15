@@ -14,7 +14,7 @@ export interface GraphEntry {
 
 export interface BrainNode {
   id: string;
-  kind: "area" | "entry";
+  kind: "core" | "area" | "entry";
   label: string;
   source: Source;
   activityAt: string;
@@ -23,13 +23,16 @@ export interface BrainNode {
   type?: EntryType;
   refId: string;
   weight: number;
+  hue?: number;
   x?: number;
   y?: number;
+  fx?: number;
+  fy?: number;
 }
 
 export interface BrainLink {
   id: string;
-  kind: "area" | "tag";
+  kind: "core" | "area" | "tag";
   source: string | BrainNode;
   target: string | BrainNode;
   createdAt: string;
@@ -75,6 +78,18 @@ export function buildGraph(areas: Area[], entries: GraphEntry[], filters: BrainF
   for (const entry of visibleEntries) countByArea.set(entry.area_id, (countByArea.get(entry.area_id) ?? 0) + 1);
 
   const nodes: BrainNode[] = [
+    {
+      id: "core",
+      kind: "core" as const,
+      label: "Você",
+      source: "manual" as const,
+      activityAt: new Date(now).toISOString(),
+      refId: "perfil",
+      slug: "perfil",
+      weight: 11,
+      fx: 0,
+      fy: 0,
+    },
     ...visibleAreas.map((area) => ({
       id: `a:${area.id}`,
       kind: "area" as const,
@@ -85,6 +100,7 @@ export function buildGraph(areas: Area[], entries: GraphEntry[], filters: BrainF
       status: area.status,
       refId: area.id,
       weight: 7 + Math.min(countByArea.get(area.id) ?? 0, 30) * 0.35,
+      hue: hueFor(area.slug),
     })),
     ...visibleEntries.map((entry) => ({
       id: `e:${entry.id}`,
@@ -98,13 +114,22 @@ export function buildGraph(areas: Area[], entries: GraphEntry[], filters: BrainF
     })),
   ];
 
-  const links: BrainLink[] = visibleEntries.map((entry) => ({
-    id: `l:${entry.id}`,
-    kind: "area",
-    source: `e:${entry.id}`,
-    target: `a:${entry.area_id}`,
-    createdAt: entry.created_at,
-  }));
+  const links: BrainLink[] = [
+    ...visibleAreas.map((area) => ({
+      id: `c:${area.id}`,
+      kind: "core" as const,
+      source: "core",
+      target: `a:${area.id}`,
+      createdAt: area.updated_at,
+    })),
+    ...visibleEntries.map((entry) => ({
+      id: `l:${entry.id}`,
+      kind: "area" as const,
+      source: `e:${entry.id}`,
+      target: `a:${entry.area_id}`,
+      createdAt: entry.created_at,
+    })),
+  ];
 
   // Chain entries that share a tag (oldest to newest) instead of linking every pair.
   const byTag = new Map<string, GraphEntry[]>();
@@ -129,6 +154,14 @@ export function buildGraph(areas: Area[], entries: GraphEntry[], filters: BrainF
   }
 
   return { nodes, links };
+}
+
+const NEBULA_HUES = [275, 290, 305, 255, 320, 240];
+
+function hueFor(slug: string) {
+  let hash = 0;
+  for (const char of slug) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  return NEBULA_HUES[hash % NEBULA_HUES.length];
 }
 
 export function recency(dateIso: string, now = Date.now()) {
