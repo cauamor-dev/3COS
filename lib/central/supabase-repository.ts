@@ -121,7 +121,7 @@ export class SupabaseRepository implements CentralRepository {
 
   async countEntriesBySource(since: string) {
     const rows = check(
-      await this.db.from("entries").select("source").gte("created_at", since).limit(5000),
+      await this.db.from("entries").select("source").eq("archived", false).gte("created_at", since).limit(5000),
       "contar registros",
     ) as { source: Source }[];
     const counts: Partial<Record<Source, number>> = {};

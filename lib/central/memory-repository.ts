@@ -140,7 +140,7 @@ export class MemoryRepository implements CentralRepository {
   async countEntriesBySource(since: string) {
     const counts: Partial<Record<Source, number>> = {};
     for (const e of this.entries) {
-      if (e.created_at >= since) counts[e.source] = (counts[e.source] ?? 0) + 1;
+      if (!e.archived && e.created_at >= since) counts[e.source] = (counts[e.source] ?? 0) + 1;
     }
     return counts;
   }
