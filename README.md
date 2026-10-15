@@ -164,4 +164,6 @@ tests/              Vitest
 
 ## Licença
 
-[MIT](LICENSE)
+© 2026 Cauã Moreira. Código aberto sob a [GNU AGPL-3.0](LICENSE): você pode estudar, usar e modificar, mas quem distribuir ou colocar online uma versão modificada precisa publicar o código dela sob a mesma licença. Para outro tipo de uso, fale comigo.
+
+As versões publicadas até 15/10/2026 continuam valendo sob a licença MIT original.
