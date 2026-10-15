@@ -1,7 +1,7 @@
 import { cacheLife } from "next/cache";
 import { redirect } from "next/navigation";
 import { Suspense } from "react";
-import { HomeFeed } from "@/components/home/home-feed";
+import { HomeView } from "@/components/home/home-view";
 import { getCachedMember, PAGE_DATA_LIFE } from "@/lib/auth";
 import { addDays, startOfLocalDay } from "@/lib/central/time";
 import { rankNews } from "@/lib/news/store";
@@ -31,7 +31,7 @@ async function HomeContent() {
   if (!data) redirect("/login");
   const { feed, events, tasks, inbox, stories, serverNow } = data;
   return (
-    <HomeFeed
+    <HomeView
       events={events.map((o) => ({ key: `${o.entry.id}:${o.start}`, entry: o.entry, start: o.start, end: o.end }))}
       tasks={tasks.filter((task) => !task.done_at)}
       recent={feed.items}
