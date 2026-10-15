@@ -2,10 +2,17 @@ import "server-only";
 import { parseNaturalDate } from "@/lib/central/natural-date";
 import type { CentralService } from "@/lib/central/service";
 import { formatLocalTime } from "@/lib/central/time";
+import { storeBytes } from "@/lib/files/server";
 import { escapeHtml, sendTelegram, telegramApi, type InlineKeyboard } from "@/lib/notify/notifier";
 
 interface TelegramUpdate {
-  message?: { chat: { id: number }; text?: string };
+  message?: {
+    chat: { id: number };
+    text?: string;
+    caption?: string;
+    photo?: { file_id: string; file_size?: number }[];
+    document?: { file_id: string; mime_type?: string; file_name?: string; file_size?: number };
+  };
   callback_query?: { id: string; data?: string; message?: { chat: { id: number }; message_id: number } };
 }
 
@@ -13,6 +20,7 @@ const HELP = [
   "<b>3C OS no Telegram</b>",
   "",
   "Mande qualquer texto: vira nota na inbox.",
+  "Mande uma foto (com legenda, se quiser): fica salva na inbox com a imagem.",
   "Com data, vira lembrete: <i>me lembra amanhã às 9h de ligar pro Lott</i>",
   "",
   "/hoje: agenda e prazos de hoje",
@@ -29,17 +37,21 @@ export async function handleTelegramUpdate(update: TelegramUpdate, central: Cent
   if (update.callback_query) return handleCallback(update.callback_query, central);
 
   const message = update.message;
-  if (!message?.text) return;
+  if (!message) return;
   const chatId = message.chat.id;
   const configured = process.env.TELEGRAM_CHAT_ID;
 
   if (!configured || String(chatId) !== configured) {
     // Unknown chats only learn their own ID, which the owner needs once during setup.
-    if (message.text.startsWith("/start")) {
+    if (message.text?.startsWith("/start")) {
       await sendTelegram(`Seu chat ID é <code>${chatId}</code>.`, { chatId });
     }
     return;
   }
+
+  const isImageDocument = message.document?.mime_type?.startsWith("image/") || message.document?.mime_type === "application/pdf";
+  if (message.photo?.length || isImageDocument) return capturePhoto(central, message);
+  if (!message.text) return;
 
   const text = message.text.trim();
   const [command, ...rest] = text.split(/\s+/);
@@ -66,6 +78,35 @@ export async function handleTelegramUpdate(update: TelegramUpdate, central: Cent
       return capture(central, argument, "tarefa");
     default:
       return capture(central, text, "auto");
+  }
+}
+
+async function capturePhoto(central: CentralService, message: NonNullable<TelegramUpdate["message"]>) {
+  const fileId = message.photo?.at(-1)?.file_id ?? message.document!.file_id;
+  const contentType = message.photo?.length ? "image/jpeg" : message.document!.mime_type!;
+  try {
+    const info = (await (await telegramApi("getFile", { file_id: fileId })).json()) as { result?: { file_path?: string } };
+    if (!info.result?.file_path) throw new Error("arquivo indisponível");
+    const file = await fetch(`https://api.telegram.org/file/bot${process.env.TELEGRAM_BOT_TOKEN}/${info.result.file_path}`);
+    if (!file.ok) throw new Error(`HTTP ${file.status}`);
+    const url = await storeBytes(await file.arrayBuffer(), contentType);
+    const caption = message.caption?.trim() ?? "";
+    const isImage = contentType.startsWith("image/");
+    const name = message.document?.file_name ?? (isImage ? "Foto" : "Arquivo");
+    const { registro } = await central.saveEntry(
+      {
+        area_slug: "inbox",
+        tipo: "nota",
+        titulo: caption ? short(caption, 120) : isImage ? "Foto do Telegram" : name,
+        conteudo: caption,
+        ...(isImage && { imagem: url }),
+        links: [{ url, titulo: name, ...(isImage && { imagem: url }) }],
+      },
+      "manual",
+    );
+    await sendTelegram(`${isImage ? "🖼️ Foto" : "📎 Arquivo"} salvo na inbox: <b>${escapeHtml(registro.titulo)}</b>`);
+  } catch (error) {
+    await sendTelegram(`Não consegui salvar o arquivo (${escapeHtml(error instanceof Error ? error.message : "erro")}). Até 10 MB, imagem ou PDF.`);
   }
 }
 

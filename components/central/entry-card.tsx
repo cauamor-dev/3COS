@@ -46,9 +46,10 @@ export function EntryCard({ entry, showArea = true, className, children }: {
           ))}
         </div>
       )}
-      {entry.links?.length > 0 && (
+      <EntryImages entry={entry} />
+      {entry.links?.some((link) => link.imagem !== link.url) && (
         <div className="mt-2 flex flex-wrap gap-2">
-          {entry.links.map((link) => (
+          {entry.links.filter((link) => link.imagem !== link.url).map((link) => (
             <a
               key={link.url}
               href={link.url}
@@ -64,6 +65,22 @@ export function EntryCard({ entry, showArea = true, className, children }: {
       )}
       {children}
     </article>
+  );
+}
+
+/** The entry's highlight image plus any attached images, as a small gallery. */
+function EntryImages({ entry }: { entry: Entry }) {
+  const images = [...new Set([entry.image_url, ...(entry.links ?? []).map((link) => link.imagem)].filter((url): url is string => !!url))];
+  if (!images.length) return null;
+  return (
+    <div className={images.length === 1 ? "mt-3" : "mt-3 grid grid-cols-3 gap-2"}>
+      {images.slice(0, 9).map((url) => (
+        <a key={url} href={url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border">
+          {/* eslint-disable-next-line @next/next/no-img-element -- remote or signed storage links */}
+          <img src={url} alt="" loading="lazy" className={images.length === 1 ? "max-h-80 w-full object-cover" : "aspect-square w-full object-cover"} />
+        </a>
+      ))}
+    </div>
   );
 }
 

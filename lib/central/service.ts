@@ -49,6 +49,11 @@ import {
 import type { Area, CentralRepository, Entry, EntryPatch, ScheduleFields, Version } from "./types";
 import { rankNews, type NewsSettings, type RankableNews } from "@/lib/news/ranking";
 
+/** Copies images the AIs link to into our own storage (optional, server only). */
+export interface FileStore {
+  persistImage(url: string): Promise<string>;
+}
+
 /** What the service needs from the news store (kept narrow so tests can fake it). */
 export interface NewsSource {
   items(options: { hours: number; limit: number }): Promise<(RankableNews & { url: string; source: string })[]>;
@@ -196,6 +201,7 @@ export class CentralService {
   constructor(
     private readonly repo: CentralRepository,
     private readonly newsSource?: NewsSource,
+    private readonly files?: FileStore,
   ) {}
 
   /** Collected news ranked by the user's interests, for Vega and Nox. */
@@ -315,6 +321,10 @@ export class CentralService {
       name: input.area_nome,
       kind: input.area_tipo,
     });
+    if (source !== "manual" && input.imagem && this.files) {
+      // A copy keeps the image even if the original site removes it; on failure keep the link.
+      input.imagem = await this.files.persistImage(input.imagem).catch(() => input.imagem);
+    }
     const entry = await this.repo.insertEntry({
       area_id: area.id,
       type: input.tipo,

@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { AttachmentPicker, attachmentFields, useAttachments } from "@/components/central/attachments";
 import { cn } from "cn";
 import { RECURRENCES, type EntryType, type Recurrence, type SaveEntryInput } from "@/lib/central/schemas";
 
@@ -70,7 +71,7 @@ function QuickEntryForm({
   const [due, setDue] = useState("");
   const [reminder, setReminder] = useState("none");
   const [link, setLink] = useState("");
-  const [image, setImage] = useState("");
+  const attachments = useAttachments();
   const [pending, startTransition] = useTransition();
 
   const sortedAreas = [...areas]
@@ -96,15 +97,21 @@ function QuickEntryForm({
     if (type === "post") {
       return {
         links: link ? [{ url: link }] : undefined,
-        imagem: image || undefined,
       };
     }
     return {};
   }
 
+  // Uploaded files join the entry: first image as highlight, every file as a link.
+  function withAttachments(input: Partial<SaveEntryInput>): Partial<SaveEntryInput> {
+    if (!attachments.items.length) return input;
+    const files = attachmentFields(attachments.items);
+    return { ...input, ...files, ...(input.imagem && { imagem: input.imagem }), links: [...(input.links ?? []), ...files.links] };
+  }
+
   function submit(event?: React.FormEvent) {
     event?.preventDefault();
-    if (!title.trim()) return;
+    if (!title.trim() || attachments.busy) return;
     if (type === "evento" && !start) {
       toast.error("Escolha a data do evento.");
       return;
@@ -119,7 +126,7 @@ function QuickEntryForm({
         tipo: type,
         titulo: title,
         conteudo: content,
-        ...scheduleInput(),
+        ...withAttachments(scheduleInput()),
       });
       if (!result.ok) {
         toast.error(result.error);
@@ -132,6 +139,7 @@ function QuickEntryForm({
 
   return (
     <form
+      {...attachments.formProps}
       onSubmit={submit}
       onKeyDown={(event) => {
         if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) submit();
@@ -252,7 +260,6 @@ function QuickEntryForm({
       {type === "post" && (
         <div className="grid gap-3 rounded-lg border bg-white/[0.02] p-3">
           <Input type="url" value={link} onChange={(e) => setLink(e.target.value)} placeholder="Link (opcional)" />
-          <Input type="url" value={image} onChange={(e) => setImage(e.target.value)} placeholder="URL da imagem (opcional)" />
         </div>
       )}
 
@@ -266,9 +273,10 @@ function QuickEntryForm({
           className="min-h-24 font-mono text-[13px]"
         />
       </div>
+      <AttachmentPicker attachments={attachments} />
       <div className="flex items-center justify-between gap-3">
         <span className="label-mono hidden sm:block">ctrl + enter</span>
-        <Button type="submit" disabled={pending} className="ml-auto">
+        <Button type="submit" disabled={pending || attachments.busy} className="ml-auto">
           {pending ? <Loader2 className="animate-spin" /> : "Salvar"}
         </Button>
       </div>
