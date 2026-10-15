@@ -30,6 +30,9 @@ async function handler(request: Request, { params }: RouteContext<"/api/mcp/[sec
     });
   }
 
+  const rpcMethod = request.method === "POST" ? await request.clone().json().then((body) => body?.method, () => null) : null;
+  console.info(`[mcp] ${request.method} ${rpcMethod ?? "-"} ua=${request.headers.get("user-agent")?.slice(0, 60) ?? "-"}`);
+
   const requested = new URL(request.url).searchParams.get("fonte");
   const source = SOURCES.find((s) => s === requested && s !== "manual") ?? "claude";
   const auth: AuthInfo = { token: "path-secret", clientId: source, scopes: [] };

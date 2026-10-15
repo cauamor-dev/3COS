@@ -1,9 +1,12 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 import { serverEnv } from "@/lib/env";
 
 export async function createUserClient() {
+  // The auth client reads the clock when it loads the session, which prefetch prerendering forbids.
+  await connection();
   const cookieStore = await cookies();
   return createServerClient(serverEnv.supabaseUrl, serverEnv.supabaseAnonKey, {
     cookies: {
