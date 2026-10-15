@@ -105,6 +105,8 @@ Teste: “salva o contexto da Axial: estamos migrando o front para Next 16”.
 
 Teste: “o que tem de novo na Axial?”.
 
+> **Atenção:** a OpenAI vai desligar os GPTs personalizados em **11/12/2026** e as Actions não migram para plugins. Quando o seu plano liberar plugins com servidor MCP próprio, crie um plugin em **Plugins → + → Criar plugin** apontando para a **URL do conector MCP** (a mesma do Claude, sem autenticação). A Central identifica o ChatGPT pelo user-agent; se precisar, acrescente `?fonte=chatgpt` ao final da URL.
+
 ## 7. Testar o MCP com o Inspector
 
 ```bash

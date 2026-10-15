@@ -119,6 +119,7 @@ npx @modelcontextprotocol/inspector --cli http://localhost:3000/api/mcp/<MCP_SEC
 
 - **Segredo no caminho do MCP** (`/api/mcp/[secret]`, comparado em tempo constante): é o jeito mais simples de autenticar um conector pessoal no claude.ai sem OAuth. A rota já passa um `AuthInfo` adiante, então trocar por OAuth na v2 é substituir essa checagem pelo `withMcpAuth` do `mcp-handler`.
 - **GPT com Actions em vez de conector MCP no ChatGPT**: no plano Plus, conectores MCP personalizados não gravam e não funcionam no celular.
+- **Fim dos GPTs em 11/12/2026**: a OpenAI está trocando GPTs por plugins, e as Actions não migram. O substituto oficial é um servidor MCP, que a Central já tem (o mesmo do Claude). Em out/2026, porém, o plano Plus ainda não libera as ferramentas de plugins com MCP próprio no chat; quando liberar, basta criar o plugin apontando para a mesma URL do conector. Até lá, o GPT com Actions segue como caminho de leitura e escrita.
 - **SDK MCP v2** (`@modelcontextprotocol/server`): é a linha estável atual e a exigida pelo `mcp-handler` 2. Serve a spec 2026-07-28 e cai para Streamable HTTP stateless em clientes mais antigos.
 - **Versões gravadas pela camada de serviço**, não por trigger: ficam testáveis e registram a fonte correta (Claude, ChatGPT ou manual).
 - **Ferramenta extra `ler_registro`**: como as leituras truncam conteúdo longo, a IA precisa de um caminho para o texto completo.
