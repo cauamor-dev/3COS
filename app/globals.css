@@ -78,13 +78,14 @@
     -webkit-tap-highlight-color: transparent;
     -webkit-text-size-adjust: 100%;
     touch-action: manipulation;
-    overflow-x: hidden;
     overscroll-behavior: none;
   }
   body {
     @apply bg-background text-foreground;
     min-height: 100dvh;
-    overflow-x: hidden;
+    /* clip, not hidden: hidden on html and body made body a second scroll container,
+       which broke the mouse wheel on desktop. clip blocks sideways panning without that. */
+    overflow-x: clip;
     overscroll-behavior: none;
   }
   button:not(:disabled),
