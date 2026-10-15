@@ -71,6 +71,7 @@ export function useAttachments() {
     busy: busy > 0,
     add,
     remove: (url: string) => setItems((current) => current.filter((item) => item.url !== url)),
+    clear: () => setItems([]),
     /** Handlers for the form: paste or drop images and files anywhere on it. */
     formProps: {
       onPaste: (event: React.ClipboardEvent) => {
@@ -101,57 +102,84 @@ export function attachmentFields(items: Attachment[]) {
   };
 }
 
-export function AttachmentPicker({ attachments }: { attachments: Attachments }) {
+/** Hidden file input plus a click handler, shared by the labelled picker and the compact clip. */
+function useFileInput(attachments: Attachments) {
   const input = useRef<HTMLInputElement>(null);
+  const field = (
+    <input
+      ref={input}
+      type="file"
+      accept={ACCEPTED_FILES}
+      multiple
+      hidden
+      onChange={(event) => {
+        if (event.target.files) void attachments.add(event.target.files);
+        event.target.value = "";
+      }}
+    />
+  );
+  return { field, open: () => input.current?.click() };
+}
+
+export function AttachmentList({ attachments }: { attachments: Attachments }) {
+  if (!attachments.items.length) return null;
+  return (
+    <ul className="flex flex-wrap gap-2">
+      {attachments.items.map((item) => (
+        <li key={item.url} className="relative">
+          {item.image ? (
+            // eslint-disable-next-line @next/next/no-img-element -- signed link from our own storage
+            <img src={item.url} alt={item.name} className="size-16 rounded-lg border object-cover" />
+          ) : (
+            <span className="flex h-16 w-32 items-center gap-1.5 rounded-lg border px-2 text-xs text-muted-foreground">
+              <FileText className="size-4 shrink-0" />
+              <span className="truncate">{item.name}</span>
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={() => attachments.remove(item.url)}
+            aria-label={`Remover ${item.name}`}
+            className="absolute -top-1.5 -right-1.5 grid size-5 place-items-center rounded-full border bg-background text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-3" />
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
+/** Icon-only clip for tight spots like the Chloe command bar. */
+export function AttachmentClip({ attachments, className }: { attachments: Attachments; className?: string }) {
+  const { field, open } = useFileInput(attachments);
+  return (
+    <>
+      <button type="button" onClick={open} aria-label="Anexar imagem ou arquivo" className={className}>
+        {attachments.busy ? <Loader2 className="size-5 animate-spin" /> : <Paperclip className="size-5" />}
+      </button>
+      {field}
+    </>
+  );
+}
+
+export function AttachmentPicker({ attachments }: { attachments: Attachments }) {
+  const { field, open } = useFileInput(attachments);
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-2">
         <button
           type="button"
-          onClick={() => input.current?.click()}
+          onClick={open}
           className="flex h-9 items-center gap-1.5 rounded-lg border border-white/10 px-3 text-sm text-muted-foreground transition-colors duration-150 hover:border-primary/50 hover:text-foreground"
         >
           {attachments.busy ? <Loader2 className="size-4 animate-spin" /> : <Paperclip className="size-4" />}
           {attachments.busy ? "Enviando…" : "Anexar imagem ou arquivo"}
         </button>
         <span className="hidden text-[11px] text-muted-foreground sm:inline">ou cole / arraste aqui</span>
-        <input
-          ref={input}
-          type="file"
-          accept={ACCEPTED_FILES}
-          multiple
-          hidden
-          onChange={(event) => {
-            if (event.target.files) void attachments.add(event.target.files);
-            event.target.value = "";
-          }}
-        />
+        {field}
       </div>
-      {attachments.items.length > 0 && (
-        <ul className="flex flex-wrap gap-2">
-          {attachments.items.map((item) => (
-            <li key={item.url} className="relative">
-              {item.image ? (
-                // eslint-disable-next-line @next/next/no-img-element -- signed link from our own storage
-                <img src={item.url} alt={item.name} className="size-16 rounded-lg border object-cover" />
-              ) : (
-                <span className="flex h-16 w-32 items-center gap-1.5 rounded-lg border px-2 text-xs text-muted-foreground">
-                  <FileText className="size-4 shrink-0" />
-                  <span className="truncate">{item.name}</span>
-                </span>
-              )}
-              <button
-                type="button"
-                onClick={() => attachments.remove(item.url)}
-                aria-label={`Remover ${item.name}`}
-                className="absolute -top-1.5 -right-1.5 grid size-5 place-items-center rounded-full border bg-background text-muted-foreground hover:text-foreground"
-              >
-                <X className="size-3" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      <AttachmentList attachments={attachments} />
     </div>
   );
 }

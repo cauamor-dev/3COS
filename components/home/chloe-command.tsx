@@ -7,6 +7,7 @@ import { useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { toast } from "sonner";
 import { editEntryAction } from "@/app/(app)/actions";
 import { type ChloeReply, chloeCommandAction } from "@/app/(app)/chloe-actions";
+import { AttachmentClip, AttachmentList, attachmentFields, useAttachments } from "@/components/central/attachments";
 
 const OWNER = "Cauã";
 
@@ -44,18 +45,21 @@ export function ChloeCommand({ now }: { now: number }) {
   const recognition = useRef<Recognition | null>(null);
   const input = useRef<HTMLInputElement>(null);
   const canListen = useSyncExternalStore(noSubscribe, () => !!speechApi(), () => false);
+  const attachments = useAttachments();
+  const hasFiles = attachments.items.length > 0;
 
   function send(value = text) {
     const request = value.trim();
-    if (!request || pending) return;
+    if ((!request && !hasFiles) || pending || attachments.busy) return;
     startTransition(async () => {
-      const result = await chloeCommandAction(request);
+      const result = await chloeCommandAction(request, hasFiles ? attachmentFields(attachments.items) : undefined);
       if (!result.ok) {
         toast.error(result.error);
         return;
       }
       setAnswer(result.data);
       setText("");
+      attachments.clear();
     });
   }
 
@@ -93,7 +97,7 @@ export function ChloeCommand({ now }: { now: number }) {
   }
 
   return (
-    <section className="glass border-beam rounded-2xl p-4 animate-in fade-in-0 duration-300 md:p-5">
+    <section {...attachments.formProps} className="glass border-beam rounded-2xl p-4 animate-in fade-in-0 duration-300 md:p-5">
       <p className="label-mono text-lilac">chloe</p>
       <h1 className="mt-1 text-2xl font-semibold tracking-tight md:text-3xl">
         {greeting(now)}, {OWNER}.
@@ -111,11 +115,18 @@ export function ChloeCommand({ now }: { now: number }) {
           ref={input}
           value={text}
           onChange={(event) => setText(event.target.value)}
-          placeholder={listening ? "Ouvindo…" : "Peça algo: lembrete, evento, nota, agenda…"}
+          placeholder={listening ? "Ouvindo…" : hasFiles ? "Legenda (opcional)" : "Peça algo: lembrete, evento, nota, agenda…"}
           aria-label="Pedido para a Chloe"
           enterKeyHint="send"
           maxLength={500}
           className="h-12 min-w-0 flex-1 rounded-xl border border-white/10 bg-white/[0.04] px-4 text-base outline-none transition-colors duration-150 placeholder:text-muted-foreground/70 focus:border-primary/60"
+        />
+        <AttachmentClip
+          attachments={attachments}
+          className={cn(
+            "grid size-12 shrink-0 place-items-center rounded-xl border border-white/10 text-muted-foreground transition-colors duration-150 hover:border-primary/50 hover:text-foreground",
+            hasFiles && "border-primary/60 text-lilac",
+          )}
         />
         {canListen && (
           <button
@@ -132,13 +143,19 @@ export function ChloeCommand({ now }: { now: number }) {
         )}
         <button
           type="submit"
-          disabled={!text.trim() || pending}
+          disabled={(!text.trim() && !hasFiles) || pending || attachments.busy}
           aria-label="Enviar"
           className="grid size-12 shrink-0 place-items-center rounded-xl bg-primary text-primary-foreground transition-opacity duration-150 disabled:opacity-40"
         >
           {pending ? <Loader2 className="size-5 animate-spin" /> : <ArrowUp className="size-5" />}
         </button>
       </form>
+
+      {hasFiles && (
+        <div className="mt-3">
+          <AttachmentList attachments={attachments} />
+        </div>
+      )}
 
       {answer ? (
         <div className="mt-3 rounded-xl bg-primary/10 p-3 text-sm animate-in fade-in-0 slide-in-from-top-1 duration-200">

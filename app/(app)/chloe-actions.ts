@@ -6,6 +6,7 @@ import { describeError } from "@/lib/central/format-error";
 import { WATCH_TAG } from "@/components/central/labels";
 import type { SaveEntryInput } from "@/lib/central/schemas";
 import { runChloe } from "@/lib/chloe/agent";
+import { attachmentNote, type ChloeFiles } from "@/lib/chloe/attachment-note";
 import { type Command, interpretCommand } from "@/lib/chloe/command";
 import { chloeAvailable, pickTier, providerChat } from "@/lib/chloe/llm";
 import type { ActionResult } from "./actions";
@@ -44,12 +45,29 @@ const when = (iso: string) => `${day(iso)}, ${time(iso)}`;
 /** Runs a quick request typed (or spoken) on the home command bar. */
 export async function chloeCommandAction(
   text: string,
+  files?: ChloeFiles,
 ): Promise<ActionResult<ChloeReply>> {
   const member = await getMember();
   if (!member) return { ok: false, error: "Sessão expirada. Entre novamente." };
+  const central = member.central;
+
+  // With files attached, everything goes to the inbox as a note (sorting by area comes later).
+  if (files?.links?.length) {
+    try {
+      const entry = attachmentNote(text, files);
+      const { registro } = await central.saveEntry(entry, "manual");
+      refresh();
+      return {
+        ok: true,
+        data: { reply: `Guardei na inbox: ${entry.titulo}.`, undoId: registro.id, href: `/areas/inbox#${registro.id}` },
+      };
+    } catch (error) {
+      return { ok: false, error: describeError(error).message };
+    }
+  }
+
   const command = interpretCommand(text.slice(0, 500));
   if (!command) return { ok: false, error: "Escreva o que você precisa." };
-  const central = member.central;
 
   // Rules first (instant, free); a model only for what they did not understand.
   if (command.kind === "nota" && command.guessed && chloeAvailable()) {
