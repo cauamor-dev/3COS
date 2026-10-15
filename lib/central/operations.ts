@@ -3,6 +3,7 @@ import {
   agendaInput,
   briefingInput,
   tasksInput,
+  newsInput,
   editEntryInput,
   listAreasInput,
   readAreaInput,
@@ -107,6 +108,17 @@ export const operations: Operation[] = [
     readOnly: true,
     http: { method: "GET", path: "/tasks" },
     run: (central, input) => central.listTasks(input),
+  }),
+  defineOperation({
+    tool: "ver_noticias",
+    operationId: "verNoticias",
+    title: "Ver notícias",
+    description:
+      "Notícias coletadas pelo 3C OS (RSS), ordenadas pelos interesses do usuário: título, resumo, fonte, link, imagem e tópico. Use quando ele perguntar o que há de novo (IA, dev, startups) ou antes de um resumo de notícias; para destacar uma, salve um post no Mural com o link.",
+    schema: newsInput,
+    readOnly: true,
+    http: { method: "GET", path: "/news" },
+    run: (central, input) => central.news(input),
   }),
   defineOperation({
     tool: "salvar_registro",

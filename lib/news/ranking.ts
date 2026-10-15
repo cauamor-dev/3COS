@@ -36,3 +36,12 @@ export function newsScore(item: RankableNews, settings: NewsSettings, now = Date
   const unread = item.read_at ? -60 : 0;
   return freshness + interest + visual + unread;
 }
+
+/** Best items first, muted topics removed, with the matched interests attached. */
+export function rankNews<T extends RankableNews>(items: T[], settings: NewsSettings, now = Date.now()): (T & { hits: string[] })[] {
+  return items
+    .map((item) => ({ item: { ...item, hits: keywordHits(item, settings.keywords) }, score: newsScore(item, settings, now) }))
+    .filter((ranked) => ranked.score > -Infinity)
+    .sort((a, b) => b.score - a.score)
+    .map((ranked) => ranked.item);
+}

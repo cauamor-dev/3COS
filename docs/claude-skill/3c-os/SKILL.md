@@ -22,7 +22,7 @@ description: Memória, agenda, tarefas e Mural compartilhados entre Claude e Cha
 
 ## Agenda, tarefas e Mural
 
-- "O que tenho hoje/na semana?" → `ver_agenda`. "O que falta fazer?" → `listar_tarefas`.
+- "O que tenho hoje/na semana?" → `ver_agenda`. "O que falta fazer?" → `listar_tarefas`. "O que há de novo em IA/dev?" → `ver_noticias` (filtros `topico`, `horas`, `limite`).
 - Compromisso: `salvar_registro` com tipo `evento`, `inicio` (e `fim`, `local`, `recorrencia` se houver). Tarefa: tipo `tarefa` com `prazo`. "Me lembra de X às 9h": tarefa com `lembrar_em`.
 - Concluir tarefa: `editar_registro` com `concluida: true`.
 - Resultados de tarefas agendadas, notícias e achados: tipo `post` (vai para o Mural), com `links` das fontes e `imagem` quando houver.

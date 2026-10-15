@@ -18,6 +18,7 @@ Use o plugin **Supabase** com `execute_sql` **somente** para chamar funções do
 - Busca: `select central.buscar('deploy vercel', p_area => 'axial');`
 - Agenda (padrão: hoje + 7 dias): `select central.ver_agenda();` ou `select central.ver_agenda(p_de => '2026-10-20', p_ate => '2026-10-27');`
 - Tarefas: `select central.listar_tarefas();` (`p_status => 'concluidas'` ou `'todas'`)
+- Notícias coletadas (já ordenadas pelos interesses do Cauã): `select central.ver_noticias();` ou `select central.ver_noticias(p_topico => 'IA', p_horas => 24, p_limite => 10);`
 
 ## Gravar (sempre com p_fonte => 'chatgpt')
 - Novo registro: `select central.salvar_registro(p_titulo => '...', p_conteudo => '...', p_area => 'axial', p_tipo => 'decisao', p_tags => array['deploy'], p_fonte => 'chatgpt');`

@@ -65,6 +65,7 @@ describe("ferramentas", () => {
       buscar: true,
       ver_agenda: true,
       listar_tarefas: true,
+      ver_noticias: true,
       salvar_registro: false,
       atualizar_resumo: false,
       editar_registro: false,

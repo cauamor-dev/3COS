@@ -3,7 +3,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { collectNews } from "./collector";
 import { parseFeed } from "./parse";
-import { keywordHits, newsScore, type NewsSettings } from "./ranking";
+import type { NewsSettings } from "./ranking";
 
 export interface NewsItem {
   id: string;
@@ -65,14 +65,7 @@ export interface NewsStore {
   refresh(feedId?: string): Promise<{ feeds: number; items: number }>;
 }
 
-/** Best items first, muted topics removed, with the matched interests attached. */
-export function rankNews(items: NewsItem[], settings: NewsSettings, now = Date.now()) {
-  return items
-    .map((item) => ({ item: { ...item, hits: keywordHits(item, settings.keywords) }, score: newsScore(item, settings, now) }))
-    .filter((ranked) => ranked.score > -Infinity)
-    .sort((a, b) => b.score - a.score)
-    .map((ranked) => ranked.item);
-}
+export { rankNews } from "./ranking";
 
 const ITEM_COLUMNS = "id, feed_id, title, summary, url, image_url, published_at, topic, read_at, saved, news_feeds(name)";
 

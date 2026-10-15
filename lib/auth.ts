@@ -26,7 +26,8 @@ export async function getMember({ inPrivateCache = false } = {}) {
   const { data } = await supabase.auth.getClaims();
   const email = typeof data?.claims.email === "string" ? data.claims.email : null;
   if (!isAllowedEmail(email)) return null;
-  return { email: email!, supabase, central: new CentralService(new SupabaseRepository(supabase)), news: new SupabaseNewsStore(supabase) };
+  const news = new SupabaseNewsStore(supabase);
+  return { email: email!, supabase, central: new CentralService(new SupabaseRepository(supabase), news), news };
 }
 
 /**

@@ -3,6 +3,7 @@ import {
   agendaInput,
   briefingInput,
   tasksInput,
+  newsInput,
   createAreaInput,
   editEntryInput,
   feedInput,
@@ -17,6 +18,7 @@ import {
   type AgendaInput,
   type AreaKind,
   type TasksInput,
+  type NewsInput,
   type EntryType,
   type BriefingInput,
   type CreateAreaInput,
@@ -45,6 +47,13 @@ import {
   toIsoStart,
 } from "./time";
 import type { Area, CentralRepository, Entry, EntryPatch, ScheduleFields, Version } from "./types";
+import { rankNews, type NewsSettings, type RankableNews } from "@/lib/news/ranking";
+
+/** What the service needs from the news store (kept narrow so tests can fake it). */
+export interface NewsSource {
+  items(options: { hours: number; limit: number }): Promise<(RankableNews & { url: string; source: string })[]>;
+  settings(): Promise<NewsSettings>;
+}
 
 export const LIMITS = {
   entryInList: 600,
@@ -184,7 +193,32 @@ function reminderText(entry: Entry): Notice {
 const truncationHint = "Conteúdos marcados com truncado=true estão cortados; use ler_registro com o id para ler completo.";
 
 export class CentralService {
-  constructor(private readonly repo: CentralRepository) {}
+  constructor(
+    private readonly repo: CentralRepository,
+    private readonly newsSource?: NewsSource,
+  ) {}
+
+  /** Collected news ranked by the user's interests, for Vega and Nox. */
+  async news(raw: NewsInput = {}) {
+    if (!this.newsSource) throw new CentralError("not_found", "Notícias indisponíveis neste ambiente.");
+    const input = newsInput.parse(raw);
+    const [items, settings] = await Promise.all([this.newsSource.items({ hours: input.horas, limit: 200 }), this.newsSource.settings()]);
+    const topic = input.topico?.toLowerCase();
+    const ranked = rankNews(items, settings).filter((item) => !topic || item.topic.toLowerCase().includes(topic));
+    return {
+      noticias: ranked.slice(0, input.limite).map((item) => ({
+        titulo: item.title,
+        resumo: truncate(item.summary, 400).text,
+        fonte: item.source,
+        url: item.url,
+        ...(item.image_url && { imagem: item.image_url }),
+        topico: item.topic,
+        publicada_em: item.published_at,
+        ...(item.hits.length && { interesses: item.hits }),
+      })),
+      total: ranked.length,
+    };
+  }
 
   async briefing(raw: BriefingInput = {}) {
     const input = briefingInput.parse(raw);

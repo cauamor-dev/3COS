@@ -94,7 +94,7 @@ describe("OpenAPI", () => {
     expect(spec.servers[0].url).toBe(`${TEST_ENV.NEXT_PUBLIC_APP_URL}/api/v1`);
 
     const ops = Object.values(spec.paths).flatMap((methods) => Object.values(methods as Record<string, { operationId: string; description: string }>));
-    expect(ops).toHaveLength(10);
+    expect(ops).toHaveLength(11);
     for (const op of ops) {
       expect(op.operationId).toMatch(/^[a-zA-Z]+$/);
       expect(op.description.length).toBeLessThanOrEqual(300);

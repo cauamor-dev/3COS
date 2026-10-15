@@ -154,6 +154,12 @@ export const tasksInput = z.object({
   limite: limit(100, 30),
 });
 
+export const newsInput = z.object({
+  topico: z.string().trim().max(60).optional().describe("Filtrar por tópico (ex.: IA, Dev, Tecnologia BR). Sem filtro: as melhores para o usuário"),
+  horas: z.coerce.number().int().min(1).max(168).default(48).describe("Só notícias das últimas N horas (máx. 168)"),
+  limite: limit(30, 10),
+});
+
 export const createAreaInput = z.object({
   nome: z.string().trim().min(1).max(120),
   slug: slugInput.optional(),
@@ -200,4 +206,5 @@ export type UpdateAreaMetaInput = z.input<typeof updateAreaMetaInput>;
 export type FeedInput = z.input<typeof feedInput>;
 export type AgendaInput = z.input<typeof agendaInput>;
 export type TasksInput = z.input<typeof tasksInput>;
+export type NewsInput = z.input<typeof newsInput>;
 export type ImportInput = z.input<typeof importInput>;
