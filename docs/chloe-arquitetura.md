@@ -17,9 +17,9 @@ O campo **"O que você quer hoje?"** no topo do Início já executa pedidos curt
 
 Tudo tem **desfazer**. O código fica em `lib/chloe/command.ts` (regras) e `app/(app)/chloe-actions.ts` (execução), com testes em `tests/chloe-command.test.ts`. O microfone usa o reconhecimento de voz do próprio navegador, quando existe.
 
-## Próximo passo: com IA gratuita
+## Com IA gratuita (pronto, falta só a chave)
 
-Com uma chave gratuita (Groq, por exemplo), a Chloe passa a entender pedidos livres ("reorganiza minha semana para eu estudar grafos") usando **ferramentas**: os mesmos comandos do 3C OS (criar, consultar, concluir, delegar). O modelo só escolhe a ferramenta e os parâmetros; quem grava é o próprio app, com as mesmas validações de sempre. As regras de hoje continuam como plano B quando a IA estiver fora do ar.
+O código já está no app (`lib/chloe/llm.ts`: provedores e roteador; `lib/chloe/agent.ts`: ferramentas), testado com um provedor falso em `tests/chloe-agent.test.ts`. Com uma chave gratuita (Groq, por exemplo; veja `docs/setup.md`, seção 8), a Chloe passa a entender pedidos livres ("reorganiza minha semana para eu estudar grafos") usando **ferramentas**: os mesmos comandos do 3C OS (criar, consultar, delegar). O modelo só escolhe a ferramenta e os parâmetros; quem grava é o próprio app, com as mesmas validações de sempre. As regras de hoje continuam como plano B quando a IA estiver fora do ar.
 
 ## "Várias IAs juntas": o roteador de modelos
 

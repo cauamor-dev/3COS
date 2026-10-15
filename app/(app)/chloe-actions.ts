@@ -5,7 +5,9 @@ import { getMember } from "@/lib/auth";
 import { describeError } from "@/lib/central/format-error";
 import { WATCH_TAG } from "@/components/central/labels";
 import type { SaveEntryInput } from "@/lib/central/schemas";
+import { runChloe } from "@/lib/chloe/agent";
 import { type Command, interpretCommand } from "@/lib/chloe/command";
+import { chloeAvailable, pickTier, providerChat } from "@/lib/chloe/llm";
 import type { ActionResult } from "./actions";
 
 export interface ChloeReply {
@@ -48,6 +50,17 @@ export async function chloeCommandAction(
   const command = interpretCommand(text.slice(0, 500));
   if (!command) return { ok: false, error: "Escreva o que você precisa." };
   const central = member.central;
+
+  // Rules first (instant, free); a model only for what they did not understand.
+  if (command.kind === "nota" && command.guessed && chloeAvailable()) {
+    try {
+      const result = await runChloe(text.slice(0, 500), { central, chat: providerChat, tier: pickTier(text) });
+      if (result.undoId) refresh();
+      return { ok: true, data: { reply: result.reply, ...(result.undoId && { undoId: result.undoId, href: `/areas/inbox#${result.undoId}` }) } };
+    } catch {
+      // Providers down or rate limited: fall through and keep the request as a note.
+    }
+  }
 
   try {
     if (command.kind === "consulta") {

@@ -118,6 +118,16 @@ npx @modelcontextprotocol/inspector --cli http://localhost:3000/api/mcp/<MCP_SEC
 npx @modelcontextprotocol/inspector --cli http://localhost:3000/api/mcp/<MCP_SECRET> --transport http --method tools/call --tool-name obter_briefing
 ```
 
+## 8. Chloe com IA (opcional, grátis)
+
+Sem chave, a Chloe já entende pedidos curtos (lembretes, eventos, tarefas, notas, agenda, vigia de preço) por regras. Com uma chave gratuita, ela passa a entender pedidos livres e usar as ferramentas do 3C OS.
+
+1. Crie uma conta em [console.groq.com](https://console.groq.com) e gere uma API key (plano gratuito, sem cartão).
+2. Adicione na Vercel: `npx vercel env add GROQ_API_KEY production` e faça um novo deploy.
+3. Opcional, como reserva quando o Groq atingir o limite: `OPENROUTER_API_KEY` (modelos `:free`) ou `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_API_TOKEN` (Workers AI). Os modelos podem ser trocados pelas variáveis `*_MODEL*` do `.env.example`.
+
+Como ela decide: regras primeiro (instantâneo); só o que as regras não entendem vai para o modelo rápido, e pedidos longos ou de planejamento vão para o modelo maior. Detalhes em `docs/chloe-arquitetura.md`.
+
 ## Problemas comuns
 
 | Sintoma | Causa provável |

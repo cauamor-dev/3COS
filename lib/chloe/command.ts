@@ -7,7 +7,7 @@ import { parseNaturalDate } from "@/lib/central/natural-date";
  */
 export type Command =
   | { kind: "consulta"; from: string; to: string; label: string }
-  | { kind: "nota" | "ideia"; title: string; content: string }
+  | { kind: "nota" | "ideia"; title: string; content: string; /** No rule matched: a model may understand it better. */ guessed?: boolean }
   | { kind: "lembrete" | "tarefa"; title: string; at: string | null }
   | { kind: "evento"; title: string; start: string; allDay: boolean }
   | { kind: "vigia"; product: string; target: number | null };
@@ -76,7 +76,7 @@ export function interpretCommand(input: string, now = new Date()): Command | nul
     return { kind: "evento", title, start: parsed.hasTime ? parsed.at : localDay(parsed.at), allDay: !parsed.hasTime };
   }
   if (parsed.at || TASK.test(lower)) return { kind: "tarefa", title, at: parsed.at };
-  return { kind: "nota", title: short(tidy(raw)), content: raw };
+  return { kind: "nota", title: short(tidy(raw)), content: raw, guessed: true };
 }
 
 /** "Quero comprar um monitor, me avise quando estiver em promoção (até R$ 900)" → price watch for Vega. */
