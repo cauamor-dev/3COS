@@ -22,10 +22,13 @@ import { editEntryAction } from "@/app/(app)/actions";
 import { dayKey, dayLabel, formatTime } from "@/components/central/dates";
 import { SOURCE_COLOR, SOURCE_PERSONA, TYPE_LABEL } from "@/components/central/labels";
 import { TimeAgo } from "@/components/central/time-ago";
+import { NewsRow } from "@/components/news/news-card";
+import { useNewsActions } from "@/components/news/use-news-actions";
 import { useLiveEvents } from "@/components/providers/central-provider";
 import { useNow } from "@/hooks/use-now";
 import type { Source } from "@/lib/central/schemas";
 import type { Entry } from "@/lib/central/types";
+import type { NewsItem } from "@/lib/news/store";
 
 const AUTHORS: Source[] = ["claude", "chatgpt", "manual"];
 
@@ -37,7 +40,10 @@ export interface FeedEvent {
 }
 
 type Tone = "late" | "today" | "normal" | "quiet";
-type Filter = "tudo" | "urgente" | "agenda" | "tarefas" | "mural" | "time";
+type Filter = "tudo" | "urgente" | "agenda" | "tarefas" | "noticias" | "mural" | "time";
+
+// How many stories mix into "Tudo"; the Notícias filter shows the full ranked list.
+const NEWS_IN_FEED = 8;
 
 interface Card {
   key: string;
@@ -70,6 +76,7 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: "urgente", label: "Urgente" },
   { id: "agenda", label: "Agenda" },
   { id: "tarefas", label: "Tarefas" },
+  { id: "noticias", label: "Notícias" },
   { id: "mural", label: "Mural" },
   { id: "time", label: "Time" },
 ];
@@ -85,13 +92,15 @@ function countdown(ms: number) {
   return rest ? `em ${hours}h ${rest}min` : `em ${hours}h`;
 }
 
-export function HomeFeed({ events, tasks, recent, inboxCount, serverNow }: {
+export function HomeFeed({ events, tasks, recent, news, inboxCount, serverNow }: {
   events: FeedEvent[];
   tasks: Entry[];
   recent: Entry[];
+  news: NewsItem[];
   inboxCount: number;
   serverNow: number;
 }) {
+  const newsActions = useNewsActions();
   const now = useNow() ?? serverNow;
   const [filter, setFilter] = useState<Filter>("tudo");
   const [topic, setTopic] = useState<string | null>(null);
@@ -168,10 +177,12 @@ export function HomeFeed({ events, tasks, recent, inboxCount, serverNow }: {
     if (filter === "tarefas") return card.kind === "task";
     if (filter === "mural") return card.kind === "post";
     if (filter === "time") return (card.kind === "activity" || card.kind === "post") && card.entry.source !== "manual";
+    if (filter === "noticias") return false;
     return true;
   });
   const main = filtered.filter((card) => card.tone !== "quiet");
   const quiet = filtered.filter((card) => card.tone === "quiet");
+  const rows = mixNews(main, news.filter((item) => !newsActions.isDismissed(item)), filter, !!topic || !!author);
 
   const topics = useMemo(() => {
     const counts = new Map<string, { name: string; count: number }>();
@@ -239,29 +250,47 @@ export function HomeFeed({ events, tasks, recent, inboxCount, serverNow }: {
         </div>
       </div>
 
+      {main.length === 0 && filter !== "noticias" && (
+        <div className="glass flex flex-col items-center gap-2 rounded-2xl p-8 text-center">
+          <CheckCircle2 className="size-7 text-emerald-400" />
+          <p className="font-medium">Você está em dia</p>
+          <p className="text-sm text-muted-foreground">Nada urgente {filter !== "tudo" || topic ? "com esses filtros" : "agora"}. Bom momento para avançar no projeto principal.</p>
+        </div>
+      )}
+
+      {filter === "noticias" && rows.length === 0 && (
+        <div className="glass flex flex-col items-center gap-2 rounded-2xl p-8 text-center">
+          <Newspaper className="size-6 text-lilac" />
+          <p className="text-sm text-muted-foreground">Sem notícias novas agora. Ajuste interesses e fontes no Mural.</p>
+          <Link href="/mural" className="text-sm text-lilac hover:underline">Abrir o Mural</Link>
+        </div>
+      )}
+
       <ol className="space-y-2.5">
         <AnimatePresence initial={false}>
-          {main.map((card) => (
+          {rows.map((row) => (
             <motion.li
-              key={card.key}
+              key={row.kind === "card" ? row.card.key : `news:${row.item.id}`}
               layout="position"
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, x: 80, transition: { duration: 0.2 } }}
               transition={{ duration: 0.22 }}
             >
-              <FeedCard card={card} now={now} onComplete={complete} />
+              {row.kind === "card" ? (
+                <FeedCard card={row.card} now={now} onComplete={complete} />
+              ) : (
+                <NewsRow item={row.item} actions={newsActions} />
+              )}
             </motion.li>
           ))}
         </AnimatePresence>
       </ol>
 
-      {main.length === 0 && (
-        <div className="glass flex flex-col items-center gap-2 rounded-2xl p-8 text-center">
-          <CheckCircle2 className="size-7 text-emerald-400" />
-          <p className="font-medium">Você está em dia</p>
-          <p className="text-sm text-muted-foreground">Nada urgente {filter !== "tudo" || topic ? "com esses filtros" : "agora"}. Bom momento para avançar no projeto principal.</p>
-        </div>
+      {filter === "noticias" && rows.length > 0 && (
+        <Link href="/mural" className="mx-auto block py-2 text-center font-mono text-[11px] text-muted-foreground hover:text-foreground">
+          mais notícias, interesses e fontes no Mural →
+        </Link>
       )}
 
       {main.length > 0 && (
@@ -293,6 +322,24 @@ export function HomeFeed({ events, tasks, recent, inboxCount, serverNow }: {
       )}
     </div>
   );
+}
+
+type Row = { kind: "card"; card: Card } | { kind: "news"; item: NewsItem };
+
+/** Urgent cards first, then the feed with a story every two cards, so news never buries what matters. */
+function mixNews(main: Card[], news: NewsItem[], filter: Filter, narrowed: boolean): Row[] {
+  if (filter === "noticias") return news.map((item) => ({ kind: "news", item }));
+  const cards: Row[] = main.map((card) => ({ kind: "card", card }));
+  if (filter !== "tudo" || narrowed) return cards;
+  const urgent = main.filter((card) => card.tone === "late" || card.tone === "today").length;
+  const rows = cards.slice(0, urgent);
+  const rest = cards.slice(urgent);
+  const pool = news.slice(0, NEWS_IN_FEED);
+  for (let i = 0; rest.length || i < pool.length; i++) {
+    rows.push(...rest.splice(0, 2));
+    if (i < pool.length) rows.push({ kind: "news", item: pool[i] });
+  }
+  return rows;
 }
 
 function NowCard({ cards, now, inboxCount, lastVisit }: { cards: Card[]; now: number | null; inboxCount: number; lastVisit: string | null }) {

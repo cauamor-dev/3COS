@@ -34,7 +34,7 @@ export function MuralFeed({ initial }: { initial: Entry[] }) {
   }, [live, initial, source]);
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
+    <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-1.5">
         <Chip active={!source} onClick={() => setSource(null)}>Todos</Chip>
         {SOURCES.map((value) => (

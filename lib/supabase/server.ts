@@ -4,9 +4,12 @@ import { cookies } from "next/headers";
 import { connection } from "next/server";
 import { serverEnv } from "@/lib/env";
 
-export async function createUserClient() {
-  // The auth client reads the clock when it loads the session, which prefetch prerendering forbids.
-  await connection();
+/**
+ * `inPrivateCache`: called inside a "use cache: private" loader, where reading the clock is
+ * allowed and connection() is not. Everywhere else the auth client's clock read needs connection().
+ */
+export async function createUserClient({ inPrivateCache = false } = {}) {
+  if (!inPrivateCache) await connection();
   const cookieStore = await cookies();
   return createServerClient(serverEnv.supabaseUrl, serverEnv.supabaseAnonKey, {
     cookies: {

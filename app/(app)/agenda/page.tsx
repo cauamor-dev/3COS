@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
+import { cacheLife } from "next/cache";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { AgendaView, type AgendaItem } from "@/components/agenda/agenda-view";
 import { dayKey } from "@/components/central/dates";
 import { PageHeader } from "@/components/shell/page-header";
-import { requireMember } from "@/lib/auth";
+import { getCachedMember, PAGE_DATA_LIFE } from "@/lib/auth";
 import { addDays, startOfLocalDay } from "@/lib/central/time";
 
 export const metadata: Metadata = { title: "Agenda" };
 
-async function Agenda() {
-  const { central } = await requireMember();
+async function loadAgenda() {
+  "use cache: private";
+  cacheLife(PAGE_DATA_LIFE);
+  const member = await getCachedMember();
+  if (!member) return null;
+  const { central } = member;
   const from = startOfLocalDay();
   const to = addDays(from, 60);
   const [occurrences, tasks] = await Promise.all([central.eventsBetween(from, to), central.tasksForPanel()]);
@@ -27,7 +33,13 @@ async function Agenda() {
       .map((task) => ({ key: task.id, kind: "tarefa" as const, entry: task, start: task.due_at!, end: null })),
   ].sort((a, b) => a.start.localeCompare(b.start));
 
-  return <AgendaView items={items} todayKey={dayKey(from.getTime() + 12 * 3600_000)} />;
+  return { items, todayKey: dayKey(from.getTime() + 12 * 3600_000) };
+}
+
+async function Agenda() {
+  const data = await loadAgenda();
+  if (!data) redirect("/login");
+  return <AgendaView items={data.items} todayKey={data.todayKey} />;
 }
 
 export default function AgendaPage() {

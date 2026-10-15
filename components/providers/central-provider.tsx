@@ -107,6 +107,18 @@ export function CentralProvider({
     };
   }, [router]);
 
+  // Tab data is cached on the device for a few minutes; coming back to the app after a while
+  // (the installed PWA stays in memory) reloads it, since realtime may have missed changes.
+  useEffect(() => {
+    let hiddenAt = 0;
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") hiddenAt = Date.now();
+      else if (hiddenAt && Date.now() - hiddenAt > 60_000) router.refresh();
+    };
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => document.removeEventListener("visibilitychange", onVisibility);
+  }, [router]);
+
   const subscribe = useCallback((listener: Listener) => {
     listeners.current.add(listener);
     return () => {

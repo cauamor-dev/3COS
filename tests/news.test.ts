@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { extractOgImage, parseFeed, stripHtml } from "@/lib/news/parse";
 import { keywordHits, newsScore } from "@/lib/news/ranking";
+import { rankNews, type NewsItem } from "@/lib/news/store";
 
 const rss = `<?xml version="1.0"?>
 <rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
@@ -91,5 +92,32 @@ describe("ranking de notícias", () => {
     expect(match).toBeGreaterThan(plain);
     expect(match).toBeGreaterThan(old);
     expect(muted).toBe(-Infinity);
+  });
+});
+
+describe("ordem das notícias", () => {
+  const item = (id: string, title: string, topic = "Dev", hoursAgo = 1): NewsItem => ({
+    id,
+    feed_id: "f",
+    title,
+    summary: "",
+    url: `https://site.com/${id}`,
+    image_url: null,
+    published_at: new Date(Date.parse("2026-10-15T12:00:00Z") - hoursAgo * 3_600_000).toISOString(),
+    topic,
+    read_at: null,
+    saved: false,
+    source: "Site",
+    hits: [],
+  });
+
+  it("põe interesses primeiro, marca o que casou e tira tópicos silenciados", () => {
+    const ranked = rankNews(
+      [item("a", "Notícia qualquer"), item("b", "Saiu o Next.js 17", "Dev", 3), item("c", "Rodada de investimento", "Startups")],
+      { keywords: ["Next.js"], mutedTopics: ["Startups"] },
+      Date.parse("2026-10-15T12:00:00Z"),
+    );
+    expect(ranked.map((n) => n.id)).toEqual(["b", "a"]);
+    expect(ranked[0].hits).toEqual(["Next.js"]);
   });
 });
