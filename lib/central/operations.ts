@@ -1,6 +1,8 @@
 import type { z } from "zod";
 import {
+  agendaInput,
   briefingInput,
+  tasksInput,
   editEntryInput,
   listAreasInput,
   readAreaInput,
@@ -85,11 +87,33 @@ export const operations: Operation[] = [
     run: (central, input) => central.search(input),
   }),
   defineOperation({
+    tool: "ver_agenda",
+    operationId: "verAgenda",
+    title: "Ver agenda",
+    description:
+      "Mostra os compromissos (eventos, já com repetições expandidas), as tarefas com prazo no período e as tarefas atrasadas. Padrão: hoje até 7 dias. Use quando o usuário perguntar o que tem hoje, na semana ou numa data.",
+    schema: agendaInput,
+    readOnly: true,
+    http: { method: "GET", path: "/agenda" },
+    run: (central, input) => central.agenda(input),
+  }),
+  defineOperation({
+    tool: "listar_tarefas",
+    operationId: "listarTarefas",
+    title: "Listar tarefas",
+    description:
+      "Lista tarefas pendentes (padrão), concluídas ou todas, ordenadas por prazo. Use para ver o que falta fazer ou para achar o id de uma tarefa a concluir com editar_registro.",
+    schema: tasksInput,
+    readOnly: true,
+    http: { method: "GET", path: "/tasks" },
+    run: (central, input) => central.listTasks(input),
+  }),
+  defineOperation({
     tool: "salvar_registro",
     operationId: "salvarRegistro",
     title: "Salvar registro",
     description:
-      "Cria um registro na linha do tempo de uma área. Use ao fim de uma sessão de trabalho ou quando houver decisão, progresso ou contexto novo. Se a área não existir, ela é criada; se não souber a área, pergunte ao usuário ou use inbox. Escreva de forma autossuficiente: outra IA vai ler sem ver esta conversa.",
+      "Cria um registro numa área: decisão, progresso, contexto, nota, ideia, tarefa (com prazo), evento na agenda (com inicio) ou post no Mural (com links e imagem). Use ao fim de um trabalho, quando houver algo novo, ou quando o usuário pedir para lembrar/agendar algo (use lembrar_em para avisar no horário). Se a área não existir, é criada; na dúvida, pergunte ou use inbox. Escreva de forma autossuficiente: outra IA vai ler sem ver esta conversa.",
     schema: saveEntryInput,
     readOnly: false,
     http: { method: "POST", path: "/entries" },
@@ -111,7 +135,7 @@ export const operations: Operation[] = [
     operationId: "editarRegistro",
     title: "Editar registro",
     description:
-      "Altera título, conteúdo, tipo, tags, fixação ou área de um registro, ou arquiva/desarquiva. Nada é apagado: arquivar é reversível e edições de conteúdo ficam no histórico. Só arquive se o usuário pedir.",
+      "Altera um registro: título, conteúdo, tipo, tags, área, datas, lembrete, links; conclui/reabre tarefa (concluida); arquiva/desarquiva. Nada é apagado: arquivar é reversível e edições de conteúdo ficam no histórico. Só arquive se o usuário pedir.",
     schema: editEntryInput,
     readOnly: false,
     http: { method: "PATCH", path: "/entries/{id}", pathParams: ["id"] },

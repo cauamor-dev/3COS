@@ -3,17 +3,21 @@ import { z } from "zod";
 export const SOURCES = ["claude", "chatgpt", "manual", "cursor"] as const;
 export const AREA_KINDS = ["projeto", "trabalho", "faculdade", "curso", "pessoal", "ideia", "perfil"] as const;
 export const AREA_STATUSES = ["ativo", "pausado", "concluido", "arquivado"] as const;
-export const ENTRY_TYPES = ["contexto", "decisao", "progresso", "tarefa", "nota", "ideia"] as const;
+export const ENTRY_TYPES = ["contexto", "decisao", "progresso", "tarefa", "nota", "ideia", "evento", "post"] as const;
+export const RECURRENCES = ["diaria", "semanal", "mensal", "anual"] as const;
 
 export type Source = (typeof SOURCES)[number];
 export type AreaKind = (typeof AREA_KINDS)[number];
 export type AreaStatus = (typeof AREA_STATUSES)[number];
 export type EntryType = (typeof ENTRY_TYPES)[number];
+export type Recurrence = (typeof RECURRENCES)[number];
 
 export const sourceSchema = z.enum(SOURCES);
 export const areaKindSchema = z.enum(AREA_KINDS).describe("Tipo da área");
 export const areaStatusSchema = z.enum(AREA_STATUSES).describe("Status da área");
-export const entryTypeSchema = z.enum(ENTRY_TYPES).describe("Tipo do registro");
+export const entryTypeSchema = z
+  .enum(ENTRY_TYPES)
+  .describe("Tipo do registro. evento = compromisso na agenda (exige inicio); tarefa = algo a fazer (prazo opcional); post = publicação no Mural (notícias, achados, resumos de tarefas agendadas)");
 
 const slugInput = z
   .string()
@@ -41,6 +45,26 @@ const offset = z.coerce.number().int().min(0).default(0).describe("Quantos itens
 const booleanish = z
   .union([z.boolean(), z.enum(["true", "false"])])
   .transform((value) => value === true || value === "true");
+
+const linkSchema = z.object({
+  url: z.url().describe("Endereço do link"),
+  titulo: z.string().trim().max(200).optional().describe("Título do link"),
+  imagem: z.url().optional().describe("Imagem de prévia do link"),
+});
+
+export type EntryLink = z.infer<typeof linkSchema>;
+
+const scheduleFields = {
+  inicio: isoDate.optional().describe("Início do evento, com fuso. Ex.: 2026-10-20T19:00:00-03:00 ou 2026-10-20 para dia inteiro"),
+  fim: isoDate.optional().describe("Fim do evento, com fuso"),
+  dia_inteiro: booleanish.optional().describe("Evento de dia inteiro"),
+  local: z.string().trim().max(200).optional().describe("Local do evento"),
+  recorrencia: z.enum(RECURRENCES).optional().describe("Repetição do evento ou lembrete"),
+  prazo: isoDate.optional().describe("Prazo da tarefa, com fuso. Ex.: 2026-10-20T18:00:00-03:00"),
+  lembrar_em: isoDate.optional().describe("Quando avisar o usuário, com fuso. Ex.: 2026-10-20T08:00:00-03:00"),
+  links: z.array(linkSchema).max(10).optional().describe("Links de fontes e referências"),
+  imagem: z.url().optional().describe("URL de imagem para destacar o registro (útil em posts)"),
+};
 
 export const briefingInput = z.object({
   desde: isoDate.optional().describe("Mostrar registros a partir desta data. Padrão: últimos 7 dias."),
@@ -88,6 +112,10 @@ export const saveEntryInput = z.object({
   conteudo: z.string().max(50_000).default("").describe("Conteúdo em markdown"),
   tags: tags.default([]),
   fixado: booleanish.default(false).describe("Fixar no topo da área"),
+  ...scheduleFields,
+}).refine((input) => input.tipo !== "evento" || !!input.inicio, {
+  message: "Eventos precisam de inicio.",
+  path: ["inicio"],
 });
 
 export const updateSummaryInput = z.object({
@@ -107,6 +135,20 @@ export const editEntryInput = z.object({
   fixado: booleanish.optional(),
   arquivado: booleanish.optional().describe("true para arquivar (não apaga), false para restaurar"),
   area_slug: slugInput.optional().describe("Mover o registro para outra área existente"),
+  concluida: booleanish.optional().describe("true marca a tarefa como concluída, false reabre"),
+  ...scheduleFields,
+});
+
+export const agendaInput = z.object({
+  de: isoDate.optional().describe("Início do período. Padrão: hoje"),
+  ate: isoDate.optional().describe("Fim do período. Padrão: 7 dias a partir de hoje"),
+  area: slugInput.optional().describe("Restringir a uma área (slug)"),
+});
+
+export const tasksInput = z.object({
+  status: z.enum(["pendentes", "concluidas", "todas"]).default("pendentes").describe("Quais tarefas listar"),
+  area: slugInput.optional().describe("Restringir a uma área (slug)"),
+  limite: limit(100, 30),
 });
 
 export const createAreaInput = z.object({
@@ -126,6 +168,7 @@ export const updateAreaMetaInput = z.object({
 
 export const feedInput = z.object({
   fonte: sourceSchema.optional(),
+  tipo: entryTypeSchema.optional(),
   area: slugInput.optional(),
   antes_de: isoDate.optional(),
   limite: limit(100, 30),
@@ -152,4 +195,6 @@ export type EditEntryInput = z.input<typeof editEntryInput>;
 export type CreateAreaInput = z.input<typeof createAreaInput>;
 export type UpdateAreaMetaInput = z.input<typeof updateAreaMetaInput>;
 export type FeedInput = z.input<typeof feedInput>;
+export type AgendaInput = z.input<typeof agendaInput>;
+export type TasksInput = z.input<typeof tasksInput>;
 export type ImportInput = z.input<typeof importInput>;

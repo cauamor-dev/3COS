@@ -11,9 +11,25 @@ import type {
   NewEntry,
   NewVersion,
   Page,
+  ScheduleFields,
   SearchFilter,
+  TaskFilter,
   Version,
 } from "./types";
+
+const EMPTY_SCHEDULE: ScheduleFields = {
+  starts_at: null,
+  ends_at: null,
+  all_day: false,
+  location: null,
+  recurrence: null,
+  due_at: null,
+  done_at: null,
+  remind_at: null,
+  reminded_at: null,
+  links: [],
+  image_url: null,
+};
 import type { Source } from "./schemas";
 
 type StoredEntry = Omit<Entry, "area">;
@@ -79,6 +95,7 @@ export class MemoryRepository implements CentralRepository {
     return this.entries
       .filter((e) => !filter.areaId || e.area_id === filter.areaId)
       .filter((e) => !filter.source || e.source === filter.source)
+      .filter((e) => !filter.type || e.type === filter.type)
       .filter((e) => filter.includeArchived || !e.archived)
       .filter((e) => !filter.since || e.created_at >= filter.since)
       .filter((e) => !filter.before || e.created_at < filter.before)
@@ -98,6 +115,7 @@ export class MemoryRepository implements CentralRepository {
   async insertEntry(entry: NewEntry) {
     const now = this.now();
     const created: StoredEntry = {
+      ...EMPTY_SCHEDULE,
       ...entry,
       id: crypto.randomUUID(),
       updated_by: entry.source,
@@ -143,6 +161,30 @@ export class MemoryRepository implements CentralRepository {
       if (!e.archived && e.created_at >= since) counts[e.source] = (counts[e.source] ?? 0) + 1;
     }
     return counts;
+  }
+
+  async listEvents(filter: { from: string; to: string; areaId?: string }) {
+    return this.entries
+      .filter((e) => e.type === "evento" && e.starts_at && !e.archived)
+      .filter((e) => !filter.areaId || e.area_id === filter.areaId)
+      .filter((e) => e.starts_at! <= filter.to && (e.recurrence || (e.ends_at ?? e.starts_at!) >= filter.from))
+      .map((e) => this.withArea(e));
+  }
+
+  async listTasks(filter: TaskFilter) {
+    return this.entries
+      .filter((e) => e.type === "tarefa" && !e.archived)
+      .filter((e) => !filter.areaId || e.area_id === filter.areaId)
+      .filter((e) => filter.status === "todas" || (filter.status === "pendentes" ? !e.done_at : !!e.done_at))
+      .sort((a, b) => (a.due_at ?? "9999").localeCompare(b.due_at ?? "9999"))
+      .slice(0, filter.limit)
+      .map((e) => this.withArea(e));
+  }
+
+  async listDueReminders(now: string) {
+    return this.entries
+      .filter((e) => e.remind_at && !e.reminded_at && e.remind_at <= now && !e.archived)
+      .map((e) => this.withArea(e));
   }
 
   async insertVersion(version: NewVersion) {

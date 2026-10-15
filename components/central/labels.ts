@@ -38,4 +38,6 @@ export const TYPE_LABEL: Record<EntryType, string> = {
   tarefa: "Tarefa",
   nota: "Nota",
   ideia: "Ideia",
+  evento: "Evento",
+  post: "Post",
 };

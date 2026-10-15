@@ -63,6 +63,8 @@ describe("ferramentas", () => {
       ler_area: true,
       ler_registro: true,
       buscar: true,
+      ver_agenda: true,
+      listar_tarefas: true,
       salvar_registro: false,
       atualizar_resumo: false,
       editar_registro: false,

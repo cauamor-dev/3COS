@@ -1,4 +1,4 @@
-import type { AreaKind, AreaStatus, EntryType, Source } from "./schemas";
+import type { AreaKind, AreaStatus, EntryLink, EntryType, Recurrence, Source } from "./schemas";
 
 export interface Area {
   id: string;
@@ -26,7 +26,33 @@ export interface Entry {
   archived: boolean;
   created_at: string;
   updated_at: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  all_day: boolean;
+  location: string | null;
+  recurrence: Recurrence | null;
+  due_at: string | null;
+  done_at: string | null;
+  remind_at: string | null;
+  reminded_at: string | null;
+  links: EntryLink[];
+  image_url: string | null;
 }
+
+export type ScheduleFields = Pick<
+  Entry,
+  | "starts_at"
+  | "ends_at"
+  | "all_day"
+  | "location"
+  | "recurrence"
+  | "due_at"
+  | "done_at"
+  | "remind_at"
+  | "reminded_at"
+  | "links"
+  | "image_url"
+>;
 
 export interface Version {
   id: string;
@@ -48,9 +74,10 @@ export type AreaPatch = Partial<Pick<Area, "name" | "kind" | "status" | "summary
   touch?: boolean;
 };
 
-export type NewEntry = Pick<Entry, "area_id" | "type" | "title" | "content_md" | "tags" | "source" | "pinned">;
+export type NewEntry = Pick<Entry, "area_id" | "type" | "title" | "content_md" | "tags" | "source" | "pinned"> &
+  Partial<ScheduleFields>;
 export type EntryPatch = Partial<
-  Pick<Entry, "area_id" | "type" | "title" | "content_md" | "tags" | "pinned" | "archived" | "updated_by">
+  Pick<Entry, "area_id" | "type" | "title" | "content_md" | "tags" | "pinned" | "archived" | "updated_by"> & ScheduleFields
 >;
 
 export type NewVersion = Omit<Version, "id" | "created_at">;
@@ -65,6 +92,7 @@ export interface AreaFilter {
 export interface EntryFilter {
   areaId?: string;
   source?: Source;
+  type?: EntryType;
   includeArchived?: boolean;
   since?: string;
   before?: string;
@@ -82,6 +110,12 @@ export interface SearchFilter {
   offset: number;
 }
 
+export interface TaskFilter {
+  status: "pendentes" | "concluidas" | "todas";
+  areaId?: string;
+  limit: number;
+}
+
 export interface CentralRepository {
   listAreas(filter: AreaFilter): Promise<Page<Area>>;
   findAreaBySlug(slug: string): Promise<Area | null>;
@@ -95,6 +129,9 @@ export interface CentralRepository {
   updateEntry(id: string, patch: EntryPatch): Promise<Entry>;
   searchEntries(filter: SearchFilter): Promise<Page<Entry & { rank: number }>>;
   countEntriesBySource(since: string): Promise<Partial<Record<Source, number>>>;
+  listEvents(filter: { from: string; to: string; areaId?: string }): Promise<Entry[]>;
+  listTasks(filter: TaskFilter): Promise<Entry[]>;
+  listDueReminders(now: string): Promise<Entry[]>;
 
   insertVersion(version: NewVersion): Promise<Version>;
   listVersions(targetTable: Version["target_table"], targetId: string, limit: number): Promise<Version[]>;

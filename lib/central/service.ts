@@ -1,6 +1,8 @@
 import { CentralError, notFound } from "./errors";
 import {
+  agendaInput,
   briefingInput,
+  tasksInput,
   createAreaInput,
   editEntryInput,
   feedInput,
@@ -12,7 +14,9 @@ import {
   searchInput,
   updateAreaMetaInput,
   updateSummaryInput,
+  type AgendaInput,
   type AreaKind,
+  type TasksInput,
   type EntryType,
   type BriefingInput,
   type CreateAreaInput,
@@ -28,8 +32,9 @@ import {
   type UpdateAreaMetaInput,
   type UpdateSummaryInput,
 } from "./schemas";
-import { normalizeTags, slugify, titleFromSlug, toIsoEnd, toIsoStart, truncate } from "./text";
-import type { Area, CentralRepository, Entry, EntryPatch, Version } from "./types";
+import { normalizeTags, slugify, titleFromSlug, truncate } from "./text";
+import { addDays, isDateOnly, occurrencesBetween, startOfLocalDay, toIsoEnd, toIsoStart } from "./time";
+import type { Area, CentralRepository, Entry, EntryPatch, ScheduleFields, Version } from "./types";
 
 export const LIMITS = {
   entryInList: 600,
@@ -60,7 +65,56 @@ function entryView(entry: Entry, max: number) {
     ...(entry.archived && { arquivado: true }),
     criado_em: entry.created_at,
     ...(entry.updated_at !== entry.created_at && { atualizado_em: entry.updated_at }),
+    ...scheduleView(entry),
   };
+}
+
+function scheduleView(entry: Entry) {
+  return {
+    ...(entry.starts_at && { inicio: entry.starts_at }),
+    ...(entry.ends_at && { fim: entry.ends_at }),
+    ...(entry.all_day && { dia_inteiro: true }),
+    ...(entry.location && { local: entry.location }),
+    ...(entry.recurrence && { recorrencia: entry.recurrence }),
+    ...(entry.due_at && { prazo: entry.due_at }),
+    ...(entry.type === "tarefa" && { concluida: !!entry.done_at }),
+    ...(entry.done_at && { concluida_em: entry.done_at }),
+    ...(entry.remind_at && { lembrar_em: entry.remind_at }),
+    ...(entry.links?.length && { links: entry.links }),
+    ...(entry.image_url && { imagem: entry.image_url }),
+  };
+}
+
+interface ScheduleInput {
+  inicio?: string;
+  fim?: string;
+  dia_inteiro?: boolean;
+  local?: string;
+  recorrencia?: ScheduleFields["recurrence"];
+  prazo?: string;
+  lembrar_em?: string;
+  links?: ScheduleFields["links"];
+  imagem?: string;
+}
+
+function scheduleFromInput(input: ScheduleInput): Partial<ScheduleFields> {
+  const fields: Partial<ScheduleFields> = {};
+  if (input.inicio !== undefined) {
+    fields.starts_at = toIsoStart(input.inicio)!;
+    if (isDateOnly(input.inicio) && input.dia_inteiro === undefined) fields.all_day = true;
+  }
+  if (input.fim !== undefined) fields.ends_at = toIsoEnd(input.fim)!;
+  if (input.dia_inteiro !== undefined) fields.all_day = input.dia_inteiro;
+  if (input.local !== undefined) fields.location = input.local;
+  if (input.recorrencia !== undefined) fields.recurrence = input.recorrencia;
+  if (input.prazo !== undefined) fields.due_at = toIsoEnd(input.prazo)!;
+  if (input.lembrar_em !== undefined) {
+    fields.remind_at = toIsoStart(input.lembrar_em)!;
+    fields.reminded_at = null;
+  }
+  if (input.links !== undefined) fields.links = input.links;
+  if (input.imagem !== undefined) fields.image_url = input.imagem;
+  return fields;
 }
 
 function areaView(area: Area, max: number) {
@@ -190,6 +244,7 @@ export class CentralService {
       tags: normalizeTags(input.tags),
       source,
       pinned: input.fixado,
+      ...scheduleFromInput(input),
     });
     await this.repo.updateArea(area.id, { updated_by: source, touch: true });
     return {
@@ -243,6 +298,8 @@ export class CentralService {
     if (input.fixado !== undefined) patch.pinned = input.fixado;
     if (input.arquivado !== undefined) patch.archived = input.arquivado;
     if (input.area_slug !== undefined) patch.area_id = (await this.requireArea(input.area_slug)).id;
+    if (input.concluida !== undefined) patch.done_at = input.concluida ? new Date().toISOString() : null;
+    Object.assign(patch, scheduleFromInput(input));
 
     const contentChanged = patch.content_md !== undefined && patch.content_md !== entry.content_md;
     const titleChanged = patch.title !== undefined && patch.title !== entry.title;
@@ -260,7 +317,66 @@ export class CentralService {
     return { registro: entryView(updated, LIMITS.entryInList), mensagem: "Registro atualizado." };
   }
 
+  async agenda(raw: AgendaInput = {}) {
+    const input = agendaInput.parse(raw);
+    const from = input.de ? new Date(toIsoStart(input.de)!) : startOfLocalDay();
+    const to = input.ate ? new Date(toIsoEnd(input.ate)!) : addDays(startOfLocalDay(), 8);
+    const area = input.area ? await this.requireArea(input.area) : null;
+
+    const [events, pending] = await Promise.all([
+      this.repo.listEvents({ from: from.toISOString(), to: to.toISOString(), areaId: area?.id }),
+      this.repo.listTasks({ status: "pendentes", areaId: area?.id, limit: 200 }),
+    ]);
+
+    const occurrences = events
+      .flatMap((event) =>
+        occurrencesBetween(event.starts_at!, event.ends_at, event.recurrence, from, to).map((occurrence) => ({
+          ...entryView(event, LIMITS.entryInBriefing),
+          inicio: occurrence.start.toISOString(),
+          ...(occurrence.end && { fim: occurrence.end.toISOString() }),
+        })),
+      )
+      .sort((a, b) => a.inicio.localeCompare(b.inicio));
+
+    const now = new Date().toISOString();
+    const withDue = pending.filter((task) => task.due_at);
+    return {
+      periodo: { de: from.toISOString(), ate: to.toISOString() },
+      eventos: occurrences,
+      tarefas_atrasadas: withDue
+        .filter((task) => task.due_at! < now)
+        .map((task) => entryView(task, LIMITS.entryInBriefing)),
+      tarefas_no_periodo: withDue
+        .filter((task) => task.due_at! >= now && task.due_at! <= to.toISOString())
+        .map((task) => entryView(task, LIMITS.entryInBriefing)),
+    };
+  }
+
+  async listTasks(raw: TasksInput = {}) {
+    const input = tasksInput.parse(raw);
+    const area = input.area ? await this.requireArea(input.area) : null;
+    const tasks = await this.repo.listTasks({ status: input.status, areaId: area?.id, limit: input.limite });
+    return { tarefas: tasks.map((task) => entryView(task, LIMITS.entryInList)), total: tasks.length };
+  }
+
   // Painel
+
+  async tasksForPanel() {
+    return this.repo.listTasks({ status: "todas", limit: 300 });
+  }
+
+  async eventsBetween(from: Date, to: Date) {
+    const events = await this.repo.listEvents({ from: from.toISOString(), to: to.toISOString() });
+    return events
+      .flatMap((event) =>
+        occurrencesBetween(event.starts_at!, event.ends_at, event.recurrence, from, to).map((occurrence) => ({
+          entry: event,
+          start: occurrence.start.toISOString(),
+          end: occurrence.end?.toISOString() ?? null,
+        })),
+      )
+      .sort((a, b) => a.start.localeCompare(b.start));
+  }
 
   async getArea(slug: string) {
     return this.requireArea(slug);
@@ -286,6 +402,7 @@ export class CentralService {
     return this.repo.listEntries({
       areaId: area?.id,
       source: input.fonte,
+      type: input.tipo,
       before: toIsoStart(input.antes_de),
       limit: input.limite,
       offset: 0,

@@ -34,13 +34,3 @@ export function truncate(text: string, max: number): Truncated {
 export function normalizeTags(tags: string[]): string[] {
   return [...new Set(tags.map((tag) => slugify(tag)).filter(Boolean))];
 }
-
-export function toIsoStart(value: string | undefined): string | undefined {
-  if (!value) return undefined;
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T00:00:00.000Z` : new Date(value).toISOString();
-}
-
-export function toIsoEnd(value: string | undefined): string | undefined {
-  if (!value) return undefined;
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T23:59:59.999Z` : new Date(value).toISOString();
-}

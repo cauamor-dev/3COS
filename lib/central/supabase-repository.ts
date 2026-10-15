@@ -13,11 +13,14 @@ import type {
   NewEntry,
   NewVersion,
   SearchFilter,
+  TaskFilter,
   Version,
 } from "./types";
 
 const ENTRY_COLUMNS =
-  "id, area_id, type, title, content_md, tags, source, updated_by, pinned, archived, created_at, updated_at, area:areas!inner(slug, name)";
+  "id, area_id, type, title, content_md, tags, source, updated_by, pinned, archived, created_at, updated_at, " +
+  "starts_at, ends_at, all_day, location, recurrence, due_at, done_at, remind_at, reminded_at, links, image_url, " +
+  "area:areas!inner(slug, name)";
 
 function check<T>(result: { data: T | null; error: PostgrestError | null }, what: string): T {
   if (result.error) {
@@ -71,6 +74,7 @@ export class SupabaseRepository implements CentralRepository {
     let query = this.db.from("entries").select(ENTRY_COLUMNS, { count: "exact" });
     if (filter.areaId) query = query.eq("area_id", filter.areaId);
     if (filter.source) query = query.eq("source", filter.source);
+    if (filter.type) query = query.eq("type", filter.type);
     if (!filter.includeArchived) query = query.eq("archived", false);
     if (filter.since) query = query.gte("created_at", filter.since);
     if (filter.before) query = query.lt("created_at", filter.before);
@@ -127,6 +131,44 @@ export class SupabaseRepository implements CentralRepository {
     const counts: Partial<Record<Source, number>> = {};
     for (const row of rows) counts[row.source] = (counts[row.source] ?? 0) + 1;
     return counts;
+  }
+
+  async listEvents(filter: { from: string; to: string; areaId?: string }) {
+    let query = this.db
+      .from("entries")
+      .select(ENTRY_COLUMNS)
+      .eq("type", "evento")
+      .eq("archived", false)
+      .lte("starts_at", filter.to)
+      .or(`recurrence.not.is.null,ends_at.gte.${filter.from},starts_at.gte.${filter.from}`);
+    if (filter.areaId) query = query.eq("area_id", filter.areaId);
+    const result = await query.order("starts_at").limit(500);
+    return check(result, "listar eventos") as unknown as Entry[];
+  }
+
+  async listTasks(filter: TaskFilter) {
+    let query = this.db.from("entries").select(ENTRY_COLUMNS).eq("type", "tarefa").eq("archived", false);
+    if (filter.areaId) query = query.eq("area_id", filter.areaId);
+    if (filter.status === "pendentes") query = query.is("done_at", null);
+    if (filter.status === "concluidas") query = query.not("done_at", "is", null);
+    const result = await query
+      .order(filter.status === "concluidas" ? "done_at" : "due_at", {
+        ascending: filter.status !== "concluidas",
+        nullsFirst: false,
+      })
+      .limit(filter.limit);
+    return check(result, "listar tarefas") as unknown as Entry[];
+  }
+
+  async listDueReminders(now: string) {
+    const result = await this.db
+      .from("entries")
+      .select(ENTRY_COLUMNS)
+      .eq("archived", false)
+      .is("reminded_at", null)
+      .lte("remind_at", now)
+      .limit(50);
+    return check(result, "listar lembretes") as unknown as Entry[];
   }
 
   async insertVersion(version: NewVersion) {

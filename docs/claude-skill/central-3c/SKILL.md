@@ -1,6 +1,6 @@
 ---
 name: central-3c
-description: Memória compartilhada entre Claude e ChatGPT via conector Central 3C. Use sempre que o usuário falar de projetos, trabalho, faculdade, cursos, decisões ou progresso, pedir para salvar, lembrar ou registrar contexto, perguntar o que há de novo em uma área (ex.: Axial, Orion) ou mencionar algo que você não conhece.
+description: Memória, agenda, tarefas e Mural compartilhados entre Claude e ChatGPT via conector Central 3C. Use sempre que o usuário falar de projetos, trabalho, faculdade, cursos, compromissos, prazos ou lembretes, pedir para salvar, lembrar, agendar ou registrar algo, perguntar o que tem hoje ou o que há de novo em uma área (ex.: Axial, Orion), ou mencionar algo que você não conhece.
 ---
 
 # Central 3C
@@ -19,6 +19,14 @@ A Central 3C é a fonte única de contexto do Cauã, compartilhada entre Claude 
 - Escreva registros autossuficientes: outra IA vai ler sem ver esta conversa. Título curto e específico; conteúdo em markdown com o quê, por quê e próximos passos.
 - Tipos: `decisao`, `progresso`, `contexto`, `tarefa`, `nota`, `ideia`.
 - Se a área for ambígua, pergunte; se o usuário não souber, use `inbox`.
+
+## Agenda, tarefas e Mural
+
+- "O que tenho hoje/na semana?" → `ver_agenda`. "O que falta fazer?" → `listar_tarefas`.
+- Compromisso: `salvar_registro` com tipo `evento`, `inicio` (e `fim`, `local`, `recorrencia` se houver). Tarefa: tipo `tarefa` com `prazo`. "Me lembra de X às 9h": tarefa com `lembrar_em`.
+- Concluir tarefa: `editar_registro` com `concluida: true`.
+- Resultados de tarefas agendadas, notícias e achados: tipo `post` (vai para o Mural), com `links` das fontes e `imagem` quando houver.
+- Datas sempre com fuso de Brasília (-03:00).
 
 ## Resumo vivo
 
