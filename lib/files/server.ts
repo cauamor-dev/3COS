@@ -42,13 +42,26 @@ function isPublicHttpUrl(raw: string) {
   }
 }
 
-/** Copies an image an AI linked to into our bucket, so it survives the original site removing it. */
-export async function persistRemoteImage(url: string) {
-  if (isStoredUrl(url) || !isPublicHttpUrl(url)) return url;
+// Follows redirects by hand so every hop is checked, not only the first address.
+async function fetchPublic(url: string, hops = 0): Promise<Response> {
   const response = await fetch(url, {
+    redirect: "manual",
     signal: AbortSignal.timeout(10_000),
     headers: { "User-Agent": "Mozilla/5.0 (compatible; 3C-OS/1.0)" },
   });
+  const location = response.headers.get("location");
+  if (response.status >= 300 && response.status < 400 && location) {
+    const next = new URL(location, url).toString();
+    if (hops >= 3 || !isPublicHttpUrl(next)) throw new Error("Redirecionamento não permitido.");
+    return fetchPublic(next, hops + 1);
+  }
+  return response;
+}
+
+/** Copies an image an AI linked to into our bucket, so it survives the original site removing it. */
+export async function persistRemoteImage(url: string) {
+  if (isStoredUrl(url) || !isPublicHttpUrl(url)) return url;
+  const response = await fetchPublic(url);
   if (!response.ok) throw new Error(`HTTP ${response.status}`);
   const type = response.headers.get("content-type")?.split(";")[0].trim() ?? "";
   if (!IMAGE_TYPES.test(type)) throw new Error("O link não é uma imagem.");

@@ -50,6 +50,10 @@ async function main() {
   const member = await db.from("members").upsert({ email }, { onConflict: "email" });
   if (member.error) throw member.error;
 
+  // O login não cria contas sozinho (cadastro fechado), então a conta do dono nasce aqui.
+  const account = await db.auth.admin.createUser({ email, email_confirm: true });
+  if (account.error && !/already|registered|exists/i.test(account.error.message)) throw account.error;
+
   const result = await db
     .from("areas")
     .upsert(areas.map((area) => ({ ...area, status: "ativo", updated_by: "manual" })), {

@@ -9,10 +9,11 @@ additional_redirect_urls = [
   "https://central3c-caua.vercel.app/auth/callback",
   "http://localhost:3000/auth/callback",
 ]
-enable_signup = true
+# Cadastro fechado: a conta do dono é criada pelo `npm run db:seed`.
+enable_signup = false
 
 [auth.email]
-enable_signup = true
+enable_signup = false
 otp_length = 6
 otp_expiry = 3600
 

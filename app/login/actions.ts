@@ -30,11 +30,16 @@ export async function sendLoginEmail(_: LoginState, formData: FormData): Promise
   const next = safeNext(formData.get("next"));
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: { emailRedirectTo: `${serverEnv.appUrl}/auth/callback?next=${encodeURIComponent(next)}` },
+    options: { shouldCreateUser: false, emailRedirectTo: `${serverEnv.appUrl}/auth/callback?next=${encodeURIComponent(next)}` },
   });
 
   if (error) {
-    const message = error.status === 429 ? "Muitas tentativas. Espere um minuto e tente de novo." : error.message;
+    const message =
+      error.status === 429
+        ? "Muitas tentativas. Espere um minuto e tente de novo."
+        : /signups? not allowed|not found/i.test(error.message)
+          ? "Este e-mail não tem acesso a esta Central."
+          : error.message;
     return { step: "email", email, error: message };
   }
   return { step: "code", email };

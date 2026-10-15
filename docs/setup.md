@@ -51,7 +51,7 @@ Preencha o `.env.local`:
 | `API_KEY`, `MCP_SECRET`, `CRON_SECRET` | saída do `npm run secrets` |
 | `NEXT_PUBLIC_APP_URL` | `http://localhost:3000` localmente; a URL da Vercel em produção |
 
-Depois rode o seed (libera seu e-mail e cria as áreas `perfil`, `preferencias` e `inbox`):
+Depois rode o seed (libera seu e-mail, cria a sua conta de login e as áreas `perfil`, `preferencias` e `inbox`):
 
 ```bash
 npm run db:seed
@@ -82,7 +82,7 @@ Abra o link do e-mail no mesmo navegador em que pediu o acesso.
 
 > **Código de 6 dígitos (opcional):** o plano Free só permite editar templates de e-mail com um SMTP próprio (ex.: Resend, gratuito). Com SMTP configurado em *Authentication → Emails → SMTP Settings*, descomente o bloco `[auth.email.template.magic_link]` do `config.toml` e rode `npx supabase config push`: o e-mail passa a trazer também o código, que o painel aceita. É o melhor caminho no PWA do iPhone, onde o link abre no Safari, fora do app.
 
-> Opcional: depois do primeiro login, desligue cadastros novos em *Authentication → Sign In / Providers → Allow new users to sign up*. O RLS já bloqueia qualquer outro e-mail, mas assim nem a conta é criada.
+> O cadastro de novos usuários já vem fechado (`enable_signup = false` no `config.toml`, aplicado pelo `npx supabase config push`), e o login não cria contas: só o e-mail do seed entra. Se você configurou o projeto antes disso, confira em *Authentication → Sign In / Providers* se **Allow new users to sign up** está desligado.
 
 ## 5. Claude (conector MCP)
 
