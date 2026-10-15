@@ -65,8 +65,11 @@ async function runTool(central: CentralService, name: string, args: Args, create
   switch (name) {
     case "criar_lembrete":
       return save({ area_slug: "inbox", tipo: "tarefa", titulo, prazo: str(args.quando), lembrar_em: str(args.quando) });
-    case "criar_tarefa":
-      return save({ area_slug: str(args.area) ?? "inbox", tipo: "tarefa", titulo, ...(str(args.prazo) && { prazo: str(args.prazo) }) });
+    case "criar_tarefa": {
+      // Only an area that already exists: a model must not create areas by guessing a slug.
+      const area = str(args.area) && (await central.getArea(str(args.area)!).catch(() => null)) ? str(args.area)! : "inbox";
+      return save({ area_slug: area, tipo: "tarefa", titulo, ...(str(args.prazo) && { prazo: str(args.prazo) }) });
+    }
     case "criar_evento":
       return save({
         area_slug: "inbox",

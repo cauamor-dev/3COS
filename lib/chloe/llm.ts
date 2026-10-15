@@ -43,7 +43,7 @@ function providers(): Provider[] {
           name: "groq",
           baseUrl: "https://api.groq.com/openai/v1",
           key: env.GROQ_API_KEY,
-          models: { rapido: env.GROQ_MODEL_FAST ?? "llama-3.1-8b-instant", raciocinio: env.GROQ_MODEL_SMART ?? "llama-3.3-70b-versatile" },
+          models: { rapido: env.GROQ_MODEL_FAST ?? "llama-3.3-70b-versatile", raciocinio: env.GROQ_MODEL_SMART ?? "llama-3.3-70b-versatile" },
         }
       : null,
     env.OPENROUTER_API_KEY

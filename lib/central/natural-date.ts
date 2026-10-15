@@ -81,7 +81,10 @@ export function parseNaturalDate(input: string, now = new Date()): ParsedDate {
   const monthDay = !target && lower().match(/\bdia (\d{1,2})\b(?!\/)/);
   if (monthDay && Number(monthDay[1]) >= 1 && Number(monthDay[1]) <= 31) {
     const day = Number(monthDay[1]);
-    target = { year: today.year, month: today.month + (day < today.day ? 1 : 0), day };
+    let month = today.month + (day < today.day ? 1 : 0);
+    // "Dia 31" in a 30-day month means the next month that has a 31st, not the 1st.
+    while (new Date(Date.UTC(today.year, month + 1, 0)).getUTCDate() < day) month++;
+    target = { year: today.year, month, day };
     remove(monthDay);
   }
 

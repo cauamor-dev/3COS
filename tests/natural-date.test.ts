@@ -40,3 +40,11 @@ describe("datas em linguagem natural", () => {
     });
   });
 });
+
+describe("dia do mês", () => {
+  it("'dia 31' num mês de 30 dias vai para o próximo mês que tem dia 31", async () => {
+    const { parseNaturalDate } = await import("@/lib/central/natural-date");
+    const parsed = parseNaturalDate("prova dia 31 às 19h", new Date("2026-11-10T12:00:00-03:00"));
+    expect(parsed.at).toBe("2026-12-31T22:00:00.000Z");
+  });
+});
