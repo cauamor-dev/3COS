@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const PUBLIC_PATHS = ["/login", "/auth", "/privacidade"];
 
 export async function proxy(request: NextRequest) {
+  if (process.env.NODE_ENV === "development" && process.env.CENTRAL_DEMO === "1") return NextResponse.next();
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(

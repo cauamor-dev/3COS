@@ -14,7 +14,10 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { ENTRY_TYPES, RECURRENCES, type EntryType, type Recurrence, type SaveEntryInput } from "@/lib/central/schemas";
+import { cn } from "cn";
+import { RECURRENCES, type EntryType, type Recurrence, type SaveEntryInput } from "@/lib/central/schemas";
+
+const TYPE_ORDER: EntryType[] = ["tarefa", "evento", "nota", "ideia", "decisao", "progresso", "contexto", "post"];
 
 const NEW_AREA = "__nova__";
 const RECURRENCE_LABEL: Record<Recurrence, string> = {
@@ -29,7 +32,7 @@ export function QuickEntry() {
 
   return (
     <Dialog open={quickEntry.open} onOpenChange={(open) => !open && closeQuickEntry()}>
-      <DialogContent className="glass max-h-[90dvh] overflow-y-auto sm:max-w-lg">
+      <DialogContent className="glass max-h-[88dvh] overflow-y-auto max-sm:top-auto max-sm:bottom-0 max-sm:max-w-full max-sm:translate-y-0 max-sm:rounded-b-none max-sm:pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Novo registro</DialogTitle>
           <DialogDescription>Fica visível na hora para Claude e ChatGPT.</DialogDescription>
@@ -133,24 +136,26 @@ function QuickEntryForm({
       onKeyDown={(event) => {
         if (event.key === "Enter" && (event.metaKey || event.ctrlKey)) submit();
       }}
-      className="space-y-4"
+      className="min-w-0 space-y-4"
     >
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-2">
-          <Label>Tipo</Label>
-          <Select value={type} onValueChange={(value) => setType(value as EntryType)}>
-            <SelectTrigger className="w-full">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {ENTRY_TYPES.map((value) => (
-                <SelectItem key={value} value={value}>
-                  {TYPE_LABEL[value]}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1" role="radiogroup" aria-label="Tipo">
+        {TYPE_ORDER.map((value) => (
+          <button
+            key={value}
+            type="button"
+            role="radio"
+            aria-checked={type === value}
+            onClick={() => setType(value)}
+            className={cn(
+              "h-9 shrink-0 rounded-full border px-3.5 text-[13px] text-muted-foreground transition-colors duration-150",
+              type === value && "border-primary/60 bg-primary/20 text-foreground",
+            )}
+          >
+            {TYPE_LABEL[value]}
+          </button>
+        ))}
+      </div>
+      <div className="grid gap-3">
         <div className="space-y-2">
           <Label>Área</Label>
           <Select value={areaSlug} onValueChange={setAreaSlug}>

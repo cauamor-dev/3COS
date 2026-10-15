@@ -1,63 +1,49 @@
 import { Suspense } from "react";
-import { AreaCards } from "@/components/home/area-cards";
-import { BriefingCard } from "@/components/home/briefing-card";
-import { LiveFeed } from "@/components/home/live-feed";
-import { StatsBar } from "@/components/home/stats-bar";
-import { TodayCard } from "@/components/home/today-card";
-import { PageHeader } from "@/components/shell/page-header";
+import { HomeFeed } from "@/components/home/home-feed";
 import { requireMember } from "@/lib/auth";
 import { addDays, startOfLocalDay } from "@/lib/central/time";
 
-async function HomeContent() {
+async function loadHome() {
   const { central } = await requireMember();
   const today = startOfLocalDay();
-  const tomorrow = addDays(today, 1);
-  const [feed, stats, todayEvents, tasks] = await Promise.all([
-    central.feed({ limite: 50 }),
-    central.stats(),
-    central.eventsBetween(today, tomorrow),
+  const [feed, events, tasks, inbox] = await Promise.all([
+    central.feed({ limite: 60 }),
+    central.eventsBetween(today, addDays(today, 14)),
     central.tasksForPanel(),
+    central.feed({ area: "inbox", limite: 1 }).catch(() => ({ total: 0 })),
   ]);
-  const dueTasks = tasks.filter((task) => !task.done_at && task.due_at && task.due_at < tomorrow.toISOString());
+  return { feed, events, tasks, inbox, serverNow: Date.now() };
+}
 
+async function HomeContent() {
+  const { feed, events, tasks, inbox, serverNow } = await loadHome();
   return (
-    <div className="space-y-8">
-      <StatsBar initial={stats} />
-      <TodayCard
-        events={todayEvents.map((o) => ({ key: `${o.entry.id}:${o.start}`, entry: o.entry, start: o.start }))}
-        tasks={dueTasks}
-      />
-      <BriefingCard recent={feed.items} />
-      <section>
-        <h2 className="mb-3 text-sm font-medium">Áreas ativas</h2>
-        <AreaCards />
-      </section>
-      <LiveFeed initial={feed.items} />
-    </div>
+    <HomeFeed
+      events={events.map((o) => ({ key: `${o.entry.id}:${o.start}`, entry: o.entry, start: o.start, end: o.end }))}
+      tasks={tasks.filter((task) => !task.done_at)}
+      recent={feed.items}
+      inboxCount={inbox.total}
+      serverNow={serverNow}
+    />
   );
 }
 
 function HomeSkeleton() {
   return (
-    <div className="space-y-8">
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {Array.from({ length: 4 }, (_, i) => (
-          <div key={i} className="h-[74px] animate-pulse rounded-xl bg-white/5" />
-        ))}
-      </div>
-      <div className="h-40 animate-pulse rounded-2xl bg-white/5" />
-      <div className="h-64 animate-pulse rounded-2xl bg-white/5" />
+    <div className="space-y-4">
+      <div className="h-48 animate-pulse rounded-2xl bg-white/5" />
+      <div className="h-10 animate-pulse rounded-full bg-white/5" />
+      {Array.from({ length: 4 }, (_, i) => (
+        <div key={i} className="h-20 animate-pulse rounded-xl bg-white/5" />
+      ))}
     </div>
   );
 }
 
 export default function HomePage() {
   return (
-    <>
-      <PageHeader eyebrow="central 3c" title="O que suas IAs sabem agora" />
-      <Suspense fallback={<HomeSkeleton />}>
-        <HomeContent />
-      </Suspense>
-    </>
+    <Suspense fallback={<HomeSkeleton />}>
+      <HomeContent />
+    </Suspense>
   );
 }

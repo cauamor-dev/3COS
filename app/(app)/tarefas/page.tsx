@@ -6,10 +6,14 @@ import { requireMember } from "@/lib/auth";
 
 export const metadata: Metadata = { title: "Tarefas" };
 
-async function Tasks() {
+async function loadTasks() {
   const { central } = await requireMember();
-  const tasks = await central.tasksForPanel();
-  return <TaskBoard tasks={tasks} />;
+  return { tasks: await central.tasksForPanel(), serverNow: Date.now() };
+}
+
+async function Tasks() {
+  const { tasks, serverNow } = await loadTasks();
+  return <TaskBoard tasks={tasks} serverNow={serverNow} />;
 }
 
 export default function TasksPage() {

@@ -15,7 +15,8 @@
     "db:push": "supabase db push",
     "db:seed": "tsx --env-file=.env.local scripts/seed.ts",
     "mcp:inspect": "npx @modelcontextprotocol/inspector",
-    "telegram:setup": "node scripts/telegram-setup.mjs"
+    "telegram:setup": "node scripts/telegram-setup.mjs",
+    "dev:demo": "cross-env CENTRAL_DEMO=1 next dev -p 3001"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.3.1",
@@ -48,6 +49,7 @@
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@types/web-push": "^3.6.4",
+    "cross-env": "^10.1.0",
     "eslint": "^9",
     "eslint-config-next": "16.4.1",
     "supabase": "^2.121.0",

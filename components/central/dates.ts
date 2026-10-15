@@ -1,7 +1,7 @@
 const TIME_ZONE = "America/Sao_Paulo";
 
 const timeFormat = new Intl.DateTimeFormat("pt-BR", { timeZone: TIME_ZONE, hour: "2-digit", minute: "2-digit" });
-const dayFormat = new Intl.DateTimeFormat("pt-BR", { timeZone: TIME_ZONE, weekday: "short", day: "numeric", month: "short" });
+const dayFormat = new Intl.DateTimeFormat("pt-BR", { timeZone: TIME_ZONE, weekday: "short", day: "numeric" });
 const keyFormat = new Intl.DateTimeFormat("en-CA", { timeZone: TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit" });
 const dateTimeFormat = new Intl.DateTimeFormat("pt-BR", {
   timeZone: TIME_ZONE,
@@ -29,7 +29,7 @@ export function dayLabel(key: string, todayKey: string) {
   if (diff === 0) return "Hoje";
   if (diff === 1) return "Amanhã";
   if (diff === -1) return "Ontem";
-  return dayFormat.format(new Date(`${key}T12:00:00-03:00`)).replace(".", "");
+  return dayFormat.format(new Date(`${key}T12:00:00-03:00`)).replace(".", "").replace(",", "");
 }
 
 /** Value for <input type="datetime-local"> from an ISO string, in local browser time. */

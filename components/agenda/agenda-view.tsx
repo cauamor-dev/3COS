@@ -42,7 +42,7 @@ export function AgendaView({ items, todayKey }: { items: AgendaItem[]; todayKey:
   return (
     <div className="space-y-5">
       <div className="flex items-center gap-2">
-        <div className="-mx-1 flex min-w-0 flex-1 gap-1.5 overflow-x-auto px-1 pb-1">
+        <div className="no-scrollbar -mx-1 flex min-w-0 flex-1 gap-1.5 overflow-x-auto px-1 pb-1">
           {strip.map((key) => {
             const count = byDay.get(key)?.length ?? 0;
             const date = new Date(`${key}T12:00:00-03:00`);

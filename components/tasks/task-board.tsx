@@ -16,8 +16,8 @@ import type { Entry } from "@/lib/central/types";
 
 type Group = { id: string; label: string; tasks: Entry[]; tone?: "danger" };
 
-export function TaskBoard({ tasks }: { tasks: Entry[] }) {
-  const now = useNow();
+export function TaskBoard({ tasks, serverNow }: { tasks: Entry[]; serverNow: number }) {
+  const now = useNow() ?? serverNow;
   const [showDone, setShowDone] = useState(false);
   const [optimistic, toggleOptimistic] = useOptimistic(tasks, (current, id: string) =>
     current.map((task) => (task.id === id ? { ...task, done_at: task.done_at ? null : new Date().toISOString() } : task)),
@@ -25,7 +25,7 @@ export function TaskBoard({ tasks }: { tasks: Entry[] }) {
   const [, startTransition] = useTransition();
 
   const groups = useMemo<Group[]>(() => {
-    const reference = now ?? 0;
+    const reference = now;
     const today = dayKey(reference);
     const weekAhead = dayKey(reference + 7 * 86_400_000);
     const pending = optimistic.filter((task) => !task.done_at);
@@ -96,9 +96,9 @@ export function TaskBoard({ tasks }: { tasks: Entry[] }) {
   );
 }
 
-function TaskRow({ task, onToggle, now }: { task: Entry; onToggle(): void; now: number | null }) {
+function TaskRow({ task, onToggle, now }: { task: Entry; onToggle(): void; now: number }) {
   const doneTask = !!task.done_at;
-  const late = !doneTask && task.due_at && now !== null && new Date(task.due_at).getTime() < now;
+  const late = !doneTask && task.due_at && new Date(task.due_at).getTime() < now;
 
   return (
     <li className="flex items-start gap-3 px-4 py-3">
@@ -121,7 +121,7 @@ function TaskRow({ task, onToggle, now }: { task: Entry; onToggle(): void; now: 
           </Link>
           {task.due_at && (
             <span className={cn(late && "text-destructive")}>
-              {now === null ? formatDateTime(task.due_at) : `${dayLabel(dayKey(task.due_at), dayKey(now))} ${formatTime(task.due_at)}`}
+              {`${dayLabel(dayKey(task.due_at), dayKey(now))} ${formatTime(task.due_at)}`}
             </span>
           )}
           {task.remind_at && !task.reminded_at && (
