@@ -44,7 +44,7 @@ export function NewsCard({ item, actions, featured }: { item: NewsItem; actions:
 
   return (
     <article className={cn("glass overflow-hidden rounded-2xl transition-opacity duration-200", read && "opacity-60")}>
-      <a href={item.url} target="_blank" rel="noreferrer" onClick={() => actions.open(item)} className="block">
+      <a href={item.url} target="_blank" rel="noreferrer" onClick={actions.reader(item)} className="block">
         {featured && item.image_url && <Thumb src={item.image_url} className="aspect-[16/9] w-full border-0 border-b" />}
         <div className="flex gap-3 p-4 pb-2">
           <div className="min-w-0 flex-1">
@@ -81,7 +81,7 @@ export function NewsRow({ item, actions }: { item: NewsItem; actions: NewsAction
   return (
     <div className={cn("glass relative flex gap-3 overflow-hidden rounded-xl p-3.5", read && "opacity-60")}>
       <span className="absolute inset-y-0 left-0 w-1 bg-white/25" />
-      <a href={item.url} target="_blank" rel="noreferrer" onClick={() => actions.open(item)} className="ml-1 flex min-w-0 flex-1 gap-3">
+      <a href={item.url} target="_blank" rel="noreferrer" onClick={actions.reader(item)} className="ml-1 flex min-w-0 flex-1 gap-3">
         <div className="min-w-0 flex-1">
           <p className="flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[11px] text-muted-foreground">
             <span className="text-foreground/80">{item.source}</span>

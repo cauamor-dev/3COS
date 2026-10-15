@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import type { NewsSettings } from "@/lib/news/ranking";
 import type { NewsFeed, NewsItem } from "@/lib/news/store";
 import { NewsCard } from "./news-card";
+import { NewsReader } from "./news-reader";
 import { NewsSettingsSheet } from "./news-settings";
 import { useNewsActions } from "./use-news-actions";
 
@@ -100,6 +101,7 @@ export function NewsFeed({ items, settings, feeds }: { items: NewsItem[]; settin
         </button>
       )}
 
+      <NewsReader actions={actions} />
       <NewsSettingsSheet open={settingsOpen} onOpenChange={setSettingsOpen} settings={settings} feeds={feeds} />
     </div>
   );

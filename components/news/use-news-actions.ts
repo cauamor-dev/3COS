@@ -10,6 +10,7 @@ export function useNewsActions() {
   const [read, setRead] = useState<Set<string>>(() => new Set());
   const [dismissed, setDismissed] = useState<Set<string>>(() => new Set());
   const [saved, setSaved] = useState<Set<string>>(() => new Set());
+  const [reading, setReading] = useState<NewsItem | null>(null);
   const [, startTransition] = useTransition();
 
   const add = (set: Set<string>, id: string) => new Set(set).add(id);
@@ -65,7 +66,20 @@ export function useNewsActions() {
     }
   }
 
+  /** Click handler for story links: opens the in-app reader; modified clicks still go to the source. */
+  function reader(item: NewsItem) {
+    return (event: React.MouseEvent) => {
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0) return open(item);
+      event.preventDefault();
+      open(item);
+      setReading(item);
+    };
+  }
+
   return {
+    reading,
+    closeReader: () => setReading(null),
+    reader,
     isRead: (item: NewsItem) => !!item.read_at || read.has(item.id),
     isDismissed: (item: NewsItem) => dismissed.has(item.id),
     isSaved: (item: NewsItem) => item.saved || saved.has(item.id),

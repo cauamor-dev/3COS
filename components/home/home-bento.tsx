@@ -9,6 +9,7 @@ import { editEntryAction } from "@/app/(app)/actions";
 import { dayKey, dayLabel, formatTime } from "@/components/central/dates";
 import { SOURCE_COLOR, SOURCE_PERSONA, WATCH_TAG } from "@/components/central/labels";
 import { TimeAgo } from "@/components/central/time-ago";
+import { NewsReader } from "@/components/news/news-reader";
 import { useNewsActions } from "@/components/news/use-news-actions";
 import type { Source } from "@/lib/central/schemas";
 import type { Entry } from "@/lib/central/types";
@@ -64,6 +65,7 @@ export function HomeBento({ events, tasks, recent, news, inboxCount, now, onOpen
 
   return (
     <div className="grid grid-flow-row-dense auto-rows-[minmax(7.5rem,auto)] grid-cols-2 gap-3 md:grid-cols-4">
+      <NewsReader actions={newsActions} />
       {/* Agora */}
       <Block className="glass border-beam col-span-2 md:row-span-2" delay={0}>
         <p className="label-mono text-lilac">agora</p>
@@ -143,7 +145,7 @@ export function HomeBento({ events, tasks, recent, news, inboxCount, now, onOpen
       {/* Notícia em destaque */}
       {hero && (
         <Block className="col-span-2 row-span-2 overflow-hidden border p-0 md:col-span-2" delay={0.16}>
-          <a href={hero.url} target="_blank" rel="noreferrer" onClick={() => newsActions.open(hero)} className="group relative flex h-full min-h-64 flex-col justify-end">
+          <a href={hero.url} target="_blank" rel="noreferrer" onClick={newsActions.reader(hero)} className="group relative flex h-full min-h-64 flex-col justify-end">
             {hero.image_url && (
               // eslint-disable-next-line @next/next/no-img-element -- images come from any news site
               <img src={hero.image_url} alt="" referrerPolicy="no-referrer" className="absolute inset-0 size-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" />
@@ -208,7 +210,7 @@ export function HomeBento({ events, tasks, recent, news, inboxCount, now, onOpen
                 href={item.url}
                 target="_blank"
                 rel="noreferrer"
-                onClick={() => newsActions.open(item)}
+                onClick={newsActions.reader(item)}
                 className={cn("glass w-60 shrink-0 snap-start overflow-hidden rounded-2xl transition-opacity", newsActions.isRead(item) && "opacity-60")}
               >
                 {item.image_url ? (

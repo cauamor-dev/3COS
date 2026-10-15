@@ -23,6 +23,7 @@ import { dayKey, dayLabel, formatTime } from "@/components/central/dates";
 import { SOURCE_COLOR, SOURCE_PERSONA, TYPE_LABEL } from "@/components/central/labels";
 import { TimeAgo } from "@/components/central/time-ago";
 import { NewsRow } from "@/components/news/news-card";
+import { NewsReader } from "@/components/news/news-reader";
 import { useNewsActions } from "@/components/news/use-news-actions";
 import { useLiveEvents } from "@/components/providers/central-provider";
 import { useNow } from "@/hooks/use-now";
@@ -205,6 +206,7 @@ export function HomeFeed({ events, tasks, recent, news, inboxCount, serverNow }:
 
   return (
     <div className="space-y-5">
+      <NewsReader actions={newsActions} />
       <NowCard cards={cards} now={now} inboxCount={inboxCount} lastVisit={lastVisit} />
 
       <div className="sticky top-[calc(env(safe-area-inset-top)+3.9rem)] z-20 -mx-4 space-y-2 bg-background/80 px-4 py-2 backdrop-blur-md md:top-0">
