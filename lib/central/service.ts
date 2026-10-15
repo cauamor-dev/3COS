@@ -150,9 +150,15 @@ export interface Notice {
   title: string;
   body: string;
   path: string;
+  entryId?: string;
+  kind?: Entry["type"];
 }
 
 function reminderNotice(entry: Entry): Notice {
+  return { ...reminderText(entry), entryId: entry.id, kind: entry.type };
+}
+
+function reminderText(entry: Entry): Notice {
   const path = `/areas/${entry.area.slug}#${entry.id}`;
   if (entry.type === "evento" && entry.starts_at) {
     const when = entry.all_day ? "Hoje, o dia todo" : `Às ${formatLocalTime(entry.starts_at)}`;
@@ -401,6 +407,11 @@ export class CentralService {
       }
     }
     return due.length;
+  }
+
+  async snoozeReminder(id: string, minutes: number, source: Source) {
+    const remindAt = new Date(Date.now() + minutes * 60_000).toISOString();
+    return this.editEntry({ id, lembrar_em: remindAt }, source);
   }
 
   async dailySummary(now = new Date()): Promise<Notice & { lines: string[] }> {

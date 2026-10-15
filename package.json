@@ -14,7 +14,8 @@
     "secrets": "node scripts/generate-secrets.mjs",
     "db:push": "supabase db push",
     "db:seed": "tsx --env-file=.env.local scripts/seed.ts",
-    "mcp:inspect": "npx @modelcontextprotocol/inspector"
+    "mcp:inspect": "npx @modelcontextprotocol/inspector",
+    "telegram:setup": "node scripts/telegram-setup.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.3.1",

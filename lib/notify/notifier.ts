@@ -10,6 +10,8 @@ export interface Notification {
   path?: string;
   /** Optional richer version for e-mail. */
   html?: string;
+  entryId?: string;
+  kind?: string;
 }
 
 export interface ChannelResult {
@@ -18,12 +20,18 @@ export interface ChannelResult {
   detail?: string;
 }
 
+export type InlineKeyboard = { text: string; callback_data?: string; url?: string }[][];
+
 export function enabledChannels() {
   return {
     push: !!(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY),
     email: !!process.env.RESEND_API_KEY,
     telegram: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
   };
+}
+
+export function escapeHtml(value: string) {
+  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 async function sendPush(notification: Notification): Promise<ChannelResult> {
@@ -68,17 +76,37 @@ async function sendEmail(notification: Notification): Promise<ChannelResult> {
   return { channel: "email", ok: response.ok, detail: response.ok ? undefined : await response.text() };
 }
 
-export async function sendTelegram(text: string, chatId = process.env.TELEGRAM_CHAT_ID!): Promise<ChannelResult> {
-  const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+export async function telegramApi(method: string, body: Record<string, unknown>) {
+  const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/${method}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: chatId, text, parse_mode: "HTML", disable_web_page_preview: true }),
+    body: JSON.stringify(body),
+  });
+  return response;
+}
+
+export async function sendTelegram(
+  text: string,
+  options: { chatId?: string | number; keyboard?: InlineKeyboard } = {},
+): Promise<ChannelResult> {
+  const response = await telegramApi("sendMessage", {
+    chat_id: options.chatId ?? process.env.TELEGRAM_CHAT_ID,
+    text,
+    parse_mode: "HTML",
+    disable_web_page_preview: true,
+    ...(options.keyboard && { reply_markup: { inline_keyboard: options.keyboard } }),
   });
   return { channel: "telegram", ok: response.ok, detail: response.ok ? undefined : await response.text() };
 }
 
-function escapeHtml(value: string) {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+function reminderKeyboard(notification: Notification): InlineKeyboard | undefined {
+  if (!notification.entryId) return undefined;
+  return [
+    [
+      ...(notification.kind === "tarefa" ? [{ text: "✅ Concluir", callback_data: `done:${notification.entryId}` }] : []),
+      { text: "⏰ Adiar 1h", callback_data: `snooze:${notification.entryId}` },
+    ],
+  ];
 }
 
 export async function notify(notification: Notification, only?: ChannelResult["channel"][]): Promise<ChannelResult[]> {
@@ -90,7 +118,11 @@ export async function notify(notification: Notification, only?: ChannelResult["c
   if (wants("email")) tasks.push(sendEmail(notification));
   if (wants("telegram")) {
     const link = `${serverEnv.appUrl}${notification.path ?? "/"}`;
-    tasks.push(sendTelegram(`<b>${escapeHtml(notification.title)}</b>\n${escapeHtml(notification.body)}\n\n<a href="${link}">Abrir na Central</a>`));
+    tasks.push(
+      sendTelegram(`<b>${escapeHtml(notification.title)}</b>\n${escapeHtml(notification.body)}\n\n<a href="${link}">Abrir na Central</a>`, {
+        keyboard: reminderKeyboard(notification),
+      }),
+    );
   }
 
   const settled = await Promise.allSettled(tasks);
