@@ -1,15 +1,18 @@
 "use client";
 
 import { cn } from "cn";
-import { Briefcase, FileText, GraduationCap, Lightbulb, Loader2, Pencil, Sparkles } from "lucide-react";
-import { useState, useTransition } from "react";
+import { Briefcase, FileText, GraduationCap, Lightbulb, Loader2, Pencil, Sparkles, Upload } from "lucide-react";
+import { useRef, useState, useTransition } from "react";
 import { toast } from "sonner";
 import { updateSummaryAction } from "@/app/(app)/actions";
+import { uploadAttachment } from "@/components/central/attachments";
 import { Markdown } from "@/components/central/markdown";
 import { TimeAgo } from "@/components/central/time-ago";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { buildProfile, parseProfile, PROFILE_SECTIONS, type ProfileSectionId } from "@/lib/central/profile";
+
+const RESUME_PREFIX = "📄 **Arquivo atual:**";
 
 const ICONS: Record<ProfileSectionId, typeof Briefcase> = {
   trabalho: Briefcase,
@@ -30,8 +33,8 @@ export function ProfileEditor({ markdown, updatedAt }: { markdown: string; updat
     setDraft(profile.sections[id]);
   }
 
-  function save(id: ProfileSectionId) {
-    const next = { ...profile, sections: { ...profile.sections, [id]: draft.trim() } };
+  function save(id: ProfileSectionId, text = draft.trim()) {
+    const next = { ...profile, sections: { ...profile.sections, [id]: text } };
     startTransition(async () => {
       const result = await updateSummaryAction({ area_slug: "perfil", resumo: buildProfile(next), area_nome: "Perfil", area_tipo: "perfil" });
       if (!result.ok) {
@@ -40,8 +43,26 @@ export function ProfileEditor({ markdown, updatedAt }: { markdown: string; updat
       }
       setProfile(next);
       setEditing(null);
+      setDraft("");
       toast.success("Perfil atualizado", { description: "Vega, Nox e Chloe já recebem a nova versão." });
     });
+  }
+
+  /** The newest resume goes on top as "Arquivo atual"; older ones stay in the profile's version history. */
+  async function sendResume(file: File) {
+    try {
+      const { url, name } = await uploadAttachment(file);
+      const date = new Date().toLocaleDateString("pt-BR");
+      const line = `${RESUME_PREFIX} [${name.replace(/[[\]]/g, "")}](${url}) · enviado em ${date}`;
+      const rest = profile.sections.curriculo
+        .split("\n")
+        .filter((row) => !row.startsWith(RESUME_PREFIX))
+        .join("\n")
+        .trim();
+      save("curriculo", [line, rest].filter(Boolean).join("\n\n"));
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Não foi possível enviar o arquivo.");
+    }
   }
 
   return (
@@ -87,9 +108,6 @@ export function ProfileEditor({ markdown, updatedAt }: { markdown: string; updat
                   autoFocus
                   className="min-h-40 text-base md:text-sm"
                 />
-                {section.id === "curriculo" && (
-                  <p className="text-xs text-muted-foreground">Envio de PDF ainda indisponível: cole o texto ou o link do arquivo (Drive, LinkedIn).</p>
-                )}
                 <div className="flex justify-end gap-2">
                   <Button variant="ghost" size="sm" onClick={() => setEditing(null)} disabled={pending}>
                     Cancelar
@@ -101,11 +119,14 @@ export function ProfileEditor({ markdown, updatedAt }: { markdown: string; updat
               </div>
             ) : text ? (
               <Markdown className="mt-3 text-sm">{text}</Markdown>
+            ) : section.id === "curriculo" ? (
+              <p className="mt-3 text-sm text-muted-foreground">Envie o arquivo do currículo (PDF ou Word) ou escreva um resumo profissional.</p>
             ) : (
               <button type="button" onClick={() => edit(section.id)} className="mt-3 text-left text-sm text-muted-foreground hover:text-foreground">
                 {section.hint}
               </button>
             )}
+            {section.id === "curriculo" && !isEditing && <ResumeButton pending={pending} onFile={sendResume} />}
           </section>
         );
       })}
@@ -115,5 +136,33 @@ export function ProfileEditor({ markdown, updatedAt }: { markdown: string; updat
         </p>
       )}
     </div>
+  );
+}
+
+function ResumeButton({ pending, onFile }: { pending: boolean; onFile(file: File): Promise<void> }) {
+  const input = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const busy = uploading || pending;
+  return (
+    <>
+      <Button variant="outline" size="sm" className="mt-3 self-start" disabled={busy} onClick={() => input.current?.click()}>
+        {busy ? <Loader2 className="size-4 animate-spin" /> : <Upload className="size-4" />}
+        {busy ? "Enviando…" : "Enviar currículo (PDF ou Word)"}
+      </Button>
+      <input
+        ref={input}
+        type="file"
+        hidden
+        accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        onChange={async (event) => {
+          const file = event.target.files?.[0];
+          event.target.value = "";
+          if (!file) return;
+          setUploading(true);
+          await onFile(file);
+          setUploading(false);
+        }}
+      />
+    </>
   );
 }

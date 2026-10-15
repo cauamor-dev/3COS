@@ -3,7 +3,7 @@
 import { FileText, Loader2, Paperclip, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { FILES_BUCKET, MAX_FILE_BYTES, SIGNED_URL_SECONDS, storagePath } from "@/lib/files/shared";
+import { ACCEPTED_FILES, FILES_BUCKET, MAX_FILE_BYTES, SIGNED_URL_SECONDS, storagePath, typeFromName } from "@/lib/files/shared";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 export interface Attachment {
@@ -11,8 +11,6 @@ export interface Attachment {
   name: string;
   image: boolean;
 }
-
-const ACCEPT = "image/*,application/pdf,text/plain";
 
 /** Phone photos are huge: resize to 1600px and re-encode as WebP before uploading. */
 async function compress(file: File): Promise<Blob> {
@@ -32,11 +30,11 @@ async function compress(file: File): Promise<Blob> {
 }
 
 /** Uploads straight from the browser to the private bucket (the member's session passes the RLS policy). */
-async function upload(file: File): Promise<Attachment> {
+export async function uploadAttachment(file: File): Promise<Attachment> {
   const image = file.type.startsWith("image/");
   const body = image ? await compress(file) : file;
   if (body.size > MAX_FILE_BYTES) throw new Error(`${file.name}: maior que 10 MB.`);
-  const contentType = body.type || file.type || "application/octet-stream";
+  const contentType = body.type || file.type || typeFromName(file.name) || "application/octet-stream";
   const path = storagePath(contentType);
   const bucket = createBrowserSupabase().storage.from(FILES_BUCKET);
   const { error } = await bucket.upload(path, body, { contentType });
@@ -57,7 +55,7 @@ export function useAttachments() {
     await Promise.all(
       list.map(async (file) => {
         try {
-          const attachment = await upload(file);
+          const attachment = await uploadAttachment(file);
           setItems((current) => [...current, attachment]);
         } catch (error) {
           toast.error(error instanceof Error ? error.message : "Falha ao enviar o arquivo.");
@@ -120,7 +118,7 @@ export function AttachmentPicker({ attachments }: { attachments: Attachments }) 
         <input
           ref={input}
           type="file"
-          accept={ACCEPT}
+          accept={ACCEPTED_FILES}
           multiple
           hidden
           onChange={(event) => {

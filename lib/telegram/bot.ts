@@ -3,6 +3,7 @@ import { parseNaturalDate } from "@/lib/central/natural-date";
 import type { CentralService } from "@/lib/central/service";
 import { formatLocalTime } from "@/lib/central/time";
 import { storeBytes } from "@/lib/files/server";
+import { isAcceptedType } from "@/lib/files/shared";
 import { escapeHtml, sendTelegram, telegramApi, type InlineKeyboard } from "@/lib/notify/notifier";
 
 interface TelegramUpdate {
@@ -20,7 +21,7 @@ const HELP = [
   "<b>3C OS no Telegram</b>",
   "",
   "Mande qualquer texto: vira nota na inbox.",
-  "Mande uma foto (com legenda, se quiser): fica salva na inbox com a imagem.",
+  "Mande uma foto ou arquivo (PDF, Word, Excel…): fica salvo na inbox.",
   "Com data, vira lembrete: <i>me lembra amanhã às 9h de ligar pro Lott</i>",
   "",
   "/hoje: agenda e prazos de hoje",
@@ -49,8 +50,7 @@ export async function handleTelegramUpdate(update: TelegramUpdate, central: Cent
     return;
   }
 
-  const isImageDocument = message.document?.mime_type?.startsWith("image/") || message.document?.mime_type === "application/pdf";
-  if (message.photo?.length || isImageDocument) return capturePhoto(central, message);
+  if (message.photo?.length || isAcceptedType(message.document?.mime_type)) return capturePhoto(central, message);
   if (!message.text) return;
 
   const text = message.text.trim();
@@ -106,7 +106,7 @@ async function capturePhoto(central: CentralService, message: NonNullable<Telegr
     );
     await sendTelegram(`${isImage ? "🖼️ Foto" : "📎 Arquivo"} salvo na inbox: <b>${escapeHtml(registro.titulo)}</b>`);
   } catch (error) {
-    await sendTelegram(`Não consegui salvar o arquivo (${escapeHtml(error instanceof Error ? error.message : "erro")}). Até 10 MB, imagem ou PDF.`);
+    await sendTelegram(`Não consegui salvar o arquivo (${escapeHtml(error instanceof Error ? error.message : "erro")}). Até 10 MB: imagem, PDF, texto ou Office.`);
   }
 }
 

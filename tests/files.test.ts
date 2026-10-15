@@ -31,3 +31,15 @@ describe("imagens e arquivos", () => {
     expect(storagePath("application/pdf")).toMatch(/\.pdf$/);
   });
 });
+
+describe("tipos de arquivo", () => {
+  it("deduz o tipo pela extensão e aceita documentos do Office", async () => {
+    const { isAcceptedType, typeFromName } = await import("@/lib/files/shared");
+    expect(typeFromName("curriculo.docx")).toBe("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
+    expect(typeFromName("notas.MD")).toBe("text/markdown");
+    expect(typeFromName("foto.jpeg")).toBe("image/jpeg");
+    expect(typeFromName("virus.exe")).toBeUndefined();
+    expect(isAcceptedType("application/pdf")).toBe(true);
+    expect(isAcceptedType("application/x-msdownload")).toBe(false);
+  });
+});

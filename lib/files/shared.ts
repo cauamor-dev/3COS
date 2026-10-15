@@ -13,7 +13,29 @@ const EXTENSIONS: Record<string, string> = {
   "image/heif": "heif",
   "application/pdf": "pdf",
   "text/plain": "txt",
+  "text/markdown": "md",
+  "text/csv": "csv",
+  "application/msword": "doc",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "docx",
+  "application/vnd.ms-excel": "xls",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "xlsx",
+  "application/vnd.ms-powerpoint": "ppt",
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": "pptx",
 };
+
+/** Content type from the file name, for files the browser hands over without one (e.g. .md on Windows). */
+export function typeFromName(name: string) {
+  const ext = name.split(".").pop()?.toLowerCase();
+  return Object.entries(EXTENSIONS).find(([, value]) => value === ext)?.[0] ?? (ext === "jpeg" ? "image/jpeg" : undefined);
+}
+
+/** File types the bucket accepts. */
+export function isAcceptedType(contentType: string | undefined) {
+  return !!contentType && contentType in EXTENSIONS;
+}
+
+/** What the file pickers offer: images, PDF, text and Office documents. */
+export const ACCEPTED_FILES = `image/*,.pdf,.txt,.md,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,${Object.keys(EXTENSIONS).join(",")}`;
 
 /** yyyy/mm/<uuid>.<ext>: random names, so a link can't be guessed from another. */
 export function storagePath(contentType: string, now = new Date()) {
