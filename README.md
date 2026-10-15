@@ -11,7 +11,7 @@ Projetos, trabalho, faculdade e decisões num só lugar, lido e gravado pelas du
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Custo](https://img.shields.io/badge/custo-R%24%200-success)](#stack)
 
-![Início da Central 3C](docs/prints/inicio.png)
+**[central3c-caua.vercel.app](https://central3c-caua.vercel.app)** (acesso restrito ao dono)
 
 </div>
 
@@ -69,12 +69,6 @@ flowchart LR
 | **Conexões** | URL do conector MCP, URL do OpenAPI, API key mascarada e instruções prontas para colar |
 | **Dados** | exportação em JSON e em Markdown (.zip), importação de `.md` ou texto colado |
 | **PWA** | instalável no Android e iOS, login por magic link (e por código de 6 dígitos quando há SMTP próprio) |
-
-![Cérebro](docs/prints/cerebro.png)
-
-<p align="center">
-  <img src="docs/prints/mobile.png" alt="Painel no celular" width="280" />
-</p>
 
 ## Ferramentas para as IAs
 
