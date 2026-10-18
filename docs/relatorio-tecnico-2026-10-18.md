@@ -28,7 +28,7 @@ Marketing executado: demo fictícia funcional, vídeo vertical 12s, capa, três 
 
 ## Evidência e limites
 
-- 136 testes/23 arquivos, lint/tipos/build aprovados. PostgreSQL isolado aplica migrações reais; Auth/Storage/Cron usam fixtures nesses testes, não contam como plataformas externas.
+- 138 testes/24 arquivos, lint/tipos/build aprovados. PostgreSQL isolado aplica migrações reais; Auth/Storage/Cron usam fixtures nesses testes, não contam como plataformas externas. Runner local passou a permitir só variáveis de runtime, excluindo inclusive credenciais futuras desconhecidas; autenticação oficial ChatGPT ainda confirmada por inspect, execução desligada.
 - HTTPS produção: integração 9, arquivos 10, notificações 9; consulta real de privacidade do resumo 4. Evidências privadas ignoradas pelo Git.
 - Navegador: captura longa, demo 390×844, reserva sem duplicação, Equipe/Notificações autenticadas e leitura de aviso. Usuário confirmou login real no preview.
 - Claude e Nox leram/escreveram pela memória existente. Nox usou Supabase Work; nenhum plugin novo. Conversa Equipe individual e passagem Grok continuam não comprovadas.

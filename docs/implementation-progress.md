@@ -6,7 +6,7 @@ Implementados: privacidade no serviço/repositório administrativo/SQL legado; a
 
 ## Verificado
 
-- 136 testes em 23 arquivos, lint, tipos e build de produção passaram, incluindo a correção final da mensagem do login.
+- 138 testes em 24 arquivos, lint, tipos e build de produção passaram, incluindo a correção final da mensagem do login e isolamento do ambiente do runner. O CLI oficial continua autenticado pelo ChatGPT; runner desligado, sem cliente ou raiz configurados.
 - Nove migrações aditivas aplicadas, quatro cron originais preservados. Todos os 175 registros originais conferidos por ID, nenhum ausente. Execuções pausadas, dispatcher/modelo desligados.
 - HTTPS preview e produção: REST/MCP/fila (9), MP4 real/hash/download/privacidade (10), cron/notificações/deduplicação (9). Consulta real do resumo semanal (4) comprovou filtro de privados/restritos antes de agregação; fixture restaurada.
 - Claude leu/escreveu pelo MCP existente; Nox pelo Supabase no ChatGPT Work, conforme correção do usuário. SQL administrativo atribui system, sem falsa identidade. Não equivalem a T20/T21 completos; nenhum plugin novo criado.

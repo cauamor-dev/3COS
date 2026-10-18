@@ -31,4 +31,4 @@
 | T25 | Parcial | Pausa/fencing testados; pausa real restaurada. Cliente temporário revogado e 401 real nos dois hosts. Backup restaurado isoladamente sem down migration. Não voltou produção a código inseguro só para testar rollback. |
 | T26 | Parcial | Preview/produção com MCP/REST/arquivo/cron/avisos aprovados, callbacks/Site URL/Vault ajustados, primeiro callback 200. Vercel Ready com MCP/REST individuais/legados, privacidade e arquivo testados. Login humano definitivo aguarda quota SMTP. |
 
-Suíte: 136 testes em 23 arquivos. Smoke HTTPS: integração 9, arquivos 10, notificações 9; consulta real do resumo 4. Vinte casos de avaliação Chloe preparados: **zero avaliações reais executadas**, modelo desligado. Push sem aparelho cadastrado: **recebimento não comprovado**.
+Suíte: 138 testes em 24 arquivos. Smoke HTTPS: integração 9, arquivos 10, notificações 9; consulta real do resumo 4. Ambiente do runner isolado por allowlist e inspect oficial confirmado, sem execução ativada. Vinte casos de avaliação Chloe preparados: **zero avaliações reais executadas**, modelo desligado. Push sem aparelho cadastrado: **recebimento não comprovado**.

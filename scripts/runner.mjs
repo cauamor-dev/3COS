@@ -2,10 +2,11 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 import {execFile,spawn} from 'node:child_process';
 import {promisify} from 'node:util';
+import {runnerEnvironment} from './runner-env.mjs';
 const exec=promisify(execFile);const mode=process.argv[2]??'inspect';
 const base=process.env.CENTRAL_URL;const token=process.env.CENTRAL_CLIENT_TOKEN;
 const root=process.env.CENTRAL_RUNNER_ROOT;
-const safeEnv={...process.env};for(const key of Object.keys(safeEnv))if(/API_KEY|SERVICE_ROLE|CRON_SECRET|MCP_SECRET|VERCEL_OIDC|NETLIFY_AUTH|CENTRAL_CLIENT_TOKEN/.test(key))delete safeEnv[key];
+const safeEnv=runnerEnvironment(process.env);
 const binary=process.env.CENTRAL_CODEX_BIN??'codex.exe';
 let auth=false;try{const r=await exec(binary,['login','status'],{env:safeEnv});auth=/Logged in using ChatGPT/i.test(`${r.stdout}\n${r.stderr}`);}catch{}
 if(mode==='inspect'){console.log(JSON.stringify({chatgpt_auth:auth,central_configured:!!base&&!!token,root_configured:!!root,enabled:process.env.CENTRAL_RUNNER_ENABLED==='1',local_service_installed:false,paid_api_fallback:false}));process.exit(0);}
