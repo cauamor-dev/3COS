@@ -28,12 +28,12 @@ Marketing executado: demo fictícia funcional, vídeo vertical 12s, capa, três 
 
 ## Evidência e limites
 
-- 136 testes/23 arquivos, lint/tipos aprovados; build obrigatório antes da publicação final. PostgreSQL isolado aplica migrações reais; Auth/Storage/Cron usam fixtures nesses testes, não contam como plataformas externas.
+- 136 testes/23 arquivos, lint/tipos/build aprovados. PostgreSQL isolado aplica migrações reais; Auth/Storage/Cron usam fixtures nesses testes, não contam como plataformas externas.
 - HTTPS produção: integração 9, arquivos 10, notificações 9; consulta real de privacidade do resumo 4. Evidências privadas ignoradas pelo Git.
 - Navegador: captura longa, demo 390×844, reserva sem duplicação, Equipe/Notificações autenticadas e leitura de aviso. Usuário confirmou login real no preview.
 - Claude e Nox leram/escreveram pela memória existente. Nox usou Supabase Work; nenhum plugin novo. Conversa Equipe individual e passagem Grok continuam não comprovadas.
 - Auth/Vault configurados para Netlify e quatro cron preservados. APIs/arquivos/avisos aprovados; login humano definitivo aguarda quota SMTP (dois emails/hora), confirmada por logs. Texto de “um minuto” corrigido; não se enfraqueceu proteção.
-- Backup de 33 tabelas e dez objetos restaurado isoladamente com contagens/FKs/hashes. Snapshot por tabela, não PITR; identidades mínimas sem senhas/sessões. Recuperação remota não executada.
+- Backup final de 33 tabelas e onze objetos restaurado isoladamente com contagens/FKs/hashes. Todos os 175 registros originais preservados, conferidos por ID. Snapshot por tabela, não PITR; identidades mínimas sem senhas/sessões. Recuperação remota não executada.
 - npm: zero vulnerabilidades de runtime. Advisory braces permanece no tooling, sem downgrade forçado; revisar atualização segura antes de builds não confiáveis.
 
 Advisors Supabase: RLS sem política em tabelas internas é deny-all intencional ([0008](https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy)); pg_net em public é legado ([0014](https://supabase.com/docs/guides/database/database-linter?lint=0014_extension_in_public)); is_member é lookup intencional de membership, anon revogado ([0029](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable)); proteção de senha vazada não ativada no fluxo passwordless ([documentação](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)).
@@ -45,3 +45,5 @@ Gasto novo R$ 0. Supabase/Netlify Free verificados, sem cartão, upgrade, domín
 Execuções Central pausadas; dispatcher/modelo desligados. Pausar em Equipe impede novas aquisições/efeitos, sem desfazer ações já enviadas; rotinas externas pausam na origem. Revogar corta cliente individual. Guia em operations/release-recovery.md.
 
 Intervenções inevitáveis: login definitivo após quota; MCP somente Clara no segredo do Grok Bot; ativar/testar push no aparelho; chave grátis/avaliação para modelo Chloe; runner no PC pessoal se desejado; contrato/teste de resumo do Painel e clientes individuais Equipe Vega/Nox. Tudo externo continua sujeito ao ok aplicável. Matriz completa em matriz-aceitacao.md.
+
+Release concluído no main/branch, commit 5fe4529; deploy Netlify 6ad55647db55a9f3a40c5538. Vercel legado Ready/testado sem redirecionar segredos entre hosts. REST/MCP individuais e legados, privacidade e arquivo conferidos nos dois caminhos. Primeiro callback da função Vault para Netlify retornou 200 e cron original continuou succeeded. Cliente temporário Codex de validação revogado ao encerrar; 401 nos dois hosts comprovou efeito imediato, sem apagar histórico.

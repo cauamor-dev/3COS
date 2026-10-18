@@ -32,7 +32,7 @@ npm run backup:private exporta 33 tabelas, identidades Auth mínimas e bytes do 
 
 npx tsx scripts/restore-check.mts .private-backups/<snapshot> usa **sempre banco em memória**: importa dados/identidades e verifica contagens/FKs/hashes. O truncate do ensaio é exclusivamente isolado; não reutilizá-lo em produção.
 
-Recuperação remota: pausar escritores/cron aplicáveis, snapshot atual, projeto isolado com mesmas migrações, identidades pelo mecanismo Auth suportado (sem inventar UUIDs), dados em ordem de dependência e upload dos objetos privados. Conferir propriedade/RLS/contagens/download antes de trocar configuração. Não há restauração remota automática destrutiva neste projeto.
+Recuperação remota: pausar escritores/cron aplicáveis, snapshot atual, projeto isolado com mesmas migrações, identidades pelo mecanismo Auth suportado (sem inventar UUIDs), dados em ordem de dependência e upload dos objetos privados. Revogar clientes restaurados ou reaplicar as revogações posteriores ao snapshot antes de expor o serviço; nunca reativar token antigo por restauração de backup. Conferir propriedade/RLS/contagens/download antes de trocar configuração. Não há restauração remota automática destrutiva neste projeto.
 
 Rollback normal mantém tabelas aditivas/dados novos: desligar flags, pausar e restaurar release **compatível e segura** ou aplicar correção. Não executar down migration nem voltar API sem filtros de privacidade. Esta é a primeira release Netlify funcional; não existe deploy anterior Netlify seguro. Em incidente, pausar e corrigir mantendo o banco; voltar Auth/Vault somente após validar host anterior.
 

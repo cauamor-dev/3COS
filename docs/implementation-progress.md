@@ -7,10 +7,10 @@ Implementados: privacidade no serviço/repositório administrativo/SQL legado; a
 ## Verificado
 
 - 136 testes em 23 arquivos, lint, tipos e build de produção passaram, incluindo a correção final da mensagem do login.
-- Nove migrações aditivas aplicadas, quatro cron originais preservados. Nenhum registro original excluído. Execuções pausadas, dispatcher/modelo desligados.
+- Nove migrações aditivas aplicadas, quatro cron originais preservados. Todos os 175 registros originais conferidos por ID, nenhum ausente. Execuções pausadas, dispatcher/modelo desligados.
 - HTTPS preview e produção: REST/MCP/fila (9), MP4 real/hash/download/privacidade (10), cron/notificações/deduplicação (9). Consulta real do resumo semanal (4) comprovou filtro de privados/restritos antes de agregação; fixture restaurada.
 - Claude leu/escreveu pelo MCP existente; Nox pelo Supabase no ChatGPT Work, conforme correção do usuário. SQL administrativo atribui system, sem falsa identidade. Não equivalem a T20/T21 completos; nenhum plugin novo criado.
-- Backup completo: 33 tabelas públicas, identidades Auth mínimas, dez objetos Storage com SHA-256. Restauração isolada conferiu contagens, FKs e bytes. Snapshot por tabela, não PITR; sem senhas/sessões.
+- Backup final: 33 tabelas públicas, identidades Auth mínimas, onze objetos Storage com SHA-256. Restauração isolada conferiu contagens, FKs e bytes. Snapshot por tabela, não PITR; sem senhas/sessões.
 - Navegador: captura longa, demo móvel funcional, Equipe/Notificações autenticadas e leitura de um aviso. Usuário confirmou login no preview.
 
 ## Publicação e login
@@ -23,7 +23,7 @@ Login humano na produção limitado pelo SMTP nativo: logs confirmaram dois emai
 
 ## Retomar
 
-1. Finalizar build/commit, publicar correção final e atualizar Vercel legado com o mesmo hardening, conferindo consumidores antes de removê-lo.
+1. Código publicado no main e branch de evolução, commit 5fe4529; correção final promovida ao Netlify (deploy 6ad55647db55a9f3a40c5538). Vercel Ready e testado: login HTTP, REST individual/legado, MCP individual/legado, privacidade e arquivo. Host antigo preservado. Primeiro callback via Vault para a produção retornou 200; ciclo cron original continuou succeeded. Cliente temporário Codex revogado e 401 comprovado nos dois hosts; histórico preservado.
 2. Login humano definitivo após janela SMTP; depois converter referências antigas de arquivo. Capacidades antigas de longa duração ainda não revogadas.
 3. Usuário configurará MCP no aplicativo Grok Bot, somente Clara. Controle nativo indisponível nesta sessão; grok.com não substitui o bot. T20 não executado.
 4. Push exige teste no aparelho; Chloe exige chave grátis/avaliação; runner exige PC pessoal configurado. Nenhum ativado por inferência.
