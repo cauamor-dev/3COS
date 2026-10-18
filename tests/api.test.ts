@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { memoryCentral, resetMemory, routeContext, stubEnv, TEST_ENV, memory } from "./helpers";
 
 vi.mock("@/lib/central/server", () => ({ adminCentral: memoryCentral }));
+vi.mock("@/lib/integrations/quota",()=>({checkClientQuota:async()=>true}));
 
 const { GET, POST, PATCH, PUT } = await import("@/app/api/v1/[...path]/route");
 const { GET: getOpenApi } = await import("@/app/api/v1/openapi.json/route");

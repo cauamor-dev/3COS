@@ -43,3 +43,9 @@ next-env.d.ts
 
 # local tooling
 .claude/
+.private-backups/
+.local-reports/
+.netlify/
+tools/marketing/node_modules/
+tools/marketing/out/
+.local-audit.json

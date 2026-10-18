@@ -8,6 +8,7 @@ import { Sidebar } from "@/components/shell/sidebar";
 import { SignalLayer } from "@/components/shell/signal-layer";
 import { requireMember } from "@/lib/auth";
 import { serverEnv } from "@/lib/env";
+import { NotificationBell } from "@/components/notifications/notification-bell";
 
 async function Shell({ children }: { children: React.ReactNode }) {
   const { central } = await requireMember();
@@ -21,8 +22,13 @@ async function Shell({ children }: { children: React.ReactNode }) {
     <CentralProvider initialAreas={areas} connection={connection}>
       <MobileHeader />
       <Sidebar />
+      <div className="fixed top-[calc(env(safe-area-inset-top)+0.6rem)] right-24 z-40 rounded-xl bg-background/95 md:top-4 md:right-4 md:border md:p-1">
+        <NotificationBell />
+      </div>
       <div className="md:pl-64">
-        <main className="mx-auto w-full max-w-5xl px-4 pt-5 pb-28 md:px-8 md:pt-8 md:pb-16">{children}</main>
+        <main className="mx-auto w-full max-w-5xl px-4 pt-5 pb-28 md:px-8 md:pt-8 md:pb-16">
+          {children}
+        </main>
       </div>
       <BottomNav />
       <QuickEntryFab />

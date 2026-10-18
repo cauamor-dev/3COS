@@ -1,4 +1,5 @@
 import type { AreaKind, AreaStatus, EntryLink, EntryType, Priority, Recurrence, Source } from "./schemas";
+import type { ActorContext } from "./access";
 
 export interface Area {
   id: string;
@@ -13,6 +14,16 @@ export interface Area {
 }
 
 export interface Entry {
+  revision?: number;
+  ai_access?: "shared" | "restricted" | "private";
+  owner_id?: string | null;
+  original_text?: string | null;
+  origin_chat_id?: string | null;
+  origin_chat_title?: string | null;
+  origin_chat_url?: string | null;
+  agent_id?: string | null;
+  external_id?: string | null;
+  origin_client_id?: string | null;
   id: string;
   area_id: string;
   area: { slug: string; name: string };
@@ -57,6 +68,7 @@ export type ScheduleFields = Pick<
 >;
 
 export interface Version {
+  previous_snapshot?: Record<string,unknown> | null;
   id: string;
   target_table: "areas" | "entries";
   target_id: string;
@@ -77,9 +89,9 @@ export type AreaPatch = Partial<Pick<Area, "name" | "kind" | "status" | "summary
 };
 
 export type NewEntry = Pick<Entry, "area_id" | "type" | "title" | "content_md" | "tags" | "source" | "pinned"> &
-  Partial<ScheduleFields>;
+  Partial<ScheduleFields> & Partial<Pick<Entry, "ai_access" | "owner_id" | "original_text" | "origin_chat_id" | "origin_chat_title" | "origin_chat_url" | "agent_id" | "external_id" | "origin_client_id">>;
 export type EntryPatch = Partial<
-  Pick<Entry, "area_id" | "type" | "title" | "content_md" | "tags" | "pinned" | "archived" | "updated_by"> & ScheduleFields
+  Pick<Entry, "area_id" | "type" | "title" | "content_md" | "tags" | "pinned" | "archived" | "updated_by" | "ai_access"> & ScheduleFields
 >;
 
 export type NewVersion = Omit<Version, "id" | "created_at">;
@@ -119,6 +131,7 @@ export interface TaskFilter {
 }
 
 export interface CentralRepository {
+  forActor(actor: ActorContext): CentralRepository;
   listAreas(filter: AreaFilter): Promise<Page<Area>>;
   findAreaBySlug(slug: string): Promise<Area | null>;
   findAreaById(id: string): Promise<Area | null>;
@@ -127,8 +140,9 @@ export interface CentralRepository {
 
   listEntries(filter: EntryFilter): Promise<Page<Entry>>;
   findEntryById(id: string): Promise<Entry | null>;
+  findEntryByExternalId(externalId:string,clientId:string):Promise<Entry|null>;
   insertEntry(entry: NewEntry): Promise<Entry>;
-  updateEntry(id: string, patch: EntryPatch): Promise<Entry>;
+  updateEntry(id: string, patch: EntryPatch, expectedRevision?: number): Promise<Entry>;
   searchEntries(filter: SearchFilter): Promise<Page<Entry & { rank: number }>>;
   countEntriesBySource(since: string): Promise<Partial<Record<Source, number>>>;
   listEvents(filter: { from: string; to: string; areaId?: string }): Promise<Entry[]>;

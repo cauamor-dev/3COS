@@ -1,4 +1,5 @@
-import { notFound } from "./errors";
+import { CentralError, notFound } from "./errors";
+import { assertArea, canArea, canEntry, HUMAN_ACTOR, type ActorContext } from "./access";
 import type {
   Area,
   AreaFilter,
@@ -42,14 +43,21 @@ const normalize = (value: string) =>
     .toLowerCase();
 
 export class MemoryRepository implements CentralRepository {
+  constructor(private readonly actor: ActorContext = HUMAN_ACTOR) {}
+  forActor(actor: ActorContext): CentralRepository {
+    const scoped = new MemoryRepository(actor);
+    scoped.areas = this.areas; scoped.entries = this.entries; scoped.versions = this.versions;
+    scoped.clock=this.clock;
+    return scoped;
+  }
   areas: Area[] = [];
   entries: StoredEntry[] = [];
   versions: Version[] = [];
-  private clock = Date.now() - 60 * 60 * 1000;
+  private clock = {value:Date.now() - 60 * 60 * 1000};
 
   private now() {
-    this.clock += 1000;
-    return new Date(this.clock).toISOString();
+    this.clock.value += 1000;
+    return new Date(this.clock.value).toISOString();
   }
 
   private withArea(entry: StoredEntry): Entry {
@@ -64,6 +72,7 @@ export class MemoryRepository implements CentralRepository {
 
   async listAreas(filter: AreaFilter) {
     const items = this.areas
+      .filter(a => canArea(this.actor, a.id))
       .filter((a) => !filter.statuses || filter.statuses.includes(a.status))
       .filter((a) => !filter.kind || a.kind === filter.kind)
       .sort((a, b) => b.updated_at.localeCompare(a.updated_at));
@@ -71,14 +80,15 @@ export class MemoryRepository implements CentralRepository {
   }
 
   async findAreaBySlug(slug: string) {
-    return this.areas.find((a) => a.slug === slug) ?? null;
+    return this.areas.find((a) => a.slug === slug && canArea(this.actor, a.id)) ?? null;
   }
 
   async findAreaById(id: string) {
-    return this.areas.find((a) => a.id === id) ?? null;
+    return this.areas.find((a) => a.id === id && canArea(this.actor, a.id)) ?? null;
   }
 
   async insertArea(area: NewArea) {
+    if (this.actor.kind === "integration") throw new CentralError("forbidden", "Criação de áreas exige o proprietário.");
     const now = this.now();
     const created: Area = { ...area, id: crypto.randomUUID(), created_at: now, updated_at: now };
     this.areas.push(created);
@@ -86,6 +96,7 @@ export class MemoryRepository implements CentralRepository {
   }
 
   async updateArea(id: string, { touch: _touch, ...patch }: AreaPatch) {
+    assertArea(this.actor, id, "write");
     const area = this.areas.find((a) => a.id === id);
     if (!area) throw notFound("Área");
     Object.assign(area, patch, { updated_at: this.now() });
@@ -94,6 +105,7 @@ export class MemoryRepository implements CentralRepository {
 
   private filterEntries(filter: Omit<EntryFilter, "limit" | "offset">) {
     return this.entries
+      .filter(e => canEntry(this.actor, e))
       .filter((e) => !filter.areaId || e.area_id === filter.areaId)
       .filter((e) => !filter.source || e.source === filter.source)
       .filter((e) => !filter.type || e.type === filter.type)
@@ -110,13 +122,17 @@ export class MemoryRepository implements CentralRepository {
 
   async findEntryById(id: string) {
     const entry = this.entries.find((e) => e.id === id);
-    return entry ? this.withArea(entry) : null;
+    return entry && canEntry(this.actor, entry) ? this.withArea(entry) : null;
   }
+  async findEntryByExternalId(externalId:string,clientId:string){const e=this.entries.find(e=>e.external_id===externalId&&e.origin_client_id===clientId&&canEntry(this.actor,e));return e?this.withArea(e):null;}
 
   async insertEntry(entry: NewEntry) {
+    assertArea(this.actor, entry.area_id, "write");
     const now = this.now();
     const created: StoredEntry = {
       ...EMPTY_SCHEDULE,
+      revision: 1,
+      ai_access: "shared",
       ...entry,
       id: crypto.randomUUID(),
       updated_by: entry.source,
@@ -128,16 +144,21 @@ export class MemoryRepository implements CentralRepository {
     return this.withArea(created);
   }
 
-  async updateEntry(id: string, patch: EntryPatch) {
+  async updateEntry(id: string, patch: EntryPatch, expectedRevision?: number) {
     const entry = this.entries.find((e) => e.id === id);
-    if (!entry) throw notFound("Registro");
-    Object.assign(entry, patch, { updated_at: this.now() });
+    if (!entry || !canEntry(this.actor, entry)) throw notFound("Registro");
+    assertArea(this.actor, entry.area_id, "write");
+    if (patch.area_id) assertArea(this.actor, patch.area_id, "write");
+    if (expectedRevision !== undefined && expectedRevision !== (entry.revision ?? 1)) throw new CentralError("conflict", "Registro alterado por outra sessão. Reabra a versão atual antes de salvar.");
+    if(Object.entries(patch).some(([key,value])=>JSON.stringify(entry[key as keyof StoredEntry])!==JSON.stringify(value)))this.versions.push({ id:crypto.randomUUID(),created_at:this.now(),target_table: "entries", target_id: id, previous_title: entry.title, previous_content: entry.content_md, previous_snapshot:structuredClone(entry), source: patch.updated_by ?? entry.updated_by });
+    Object.assign(entry, patch, { revision: (entry.revision ?? 1) + 1, updated_at: this.now() });
     return this.withArea(entry);
   }
 
   async searchEntries(filter: SearchFilter) {
     const terms = normalize(filter.query).split(/\s+/).filter(Boolean);
     const scored = this.entries
+      .filter(e => canEntry(this.actor, e))
       .filter((e) => !e.archived)
       .filter((e) => !filter.areaId || e.area_id === filter.areaId)
       .filter((e) => !filter.type || e.type === filter.type)
@@ -159,6 +180,7 @@ export class MemoryRepository implements CentralRepository {
   async countEntriesBySource(since: string) {
     const counts: Partial<Record<Source, number>> = {};
     for (const e of this.entries) {
+      if (!canEntry(this.actor, e)) continue;
       if (!e.archived && e.created_at >= since) counts[e.source] = (counts[e.source] ?? 0) + 1;
     }
     return counts;
@@ -166,6 +188,7 @@ export class MemoryRepository implements CentralRepository {
 
   async listEvents(filter: { from: string; to: string; areaId?: string }) {
     return this.entries
+      .filter(e => canEntry(this.actor, e))
       .filter((e) => e.type === "evento" && e.starts_at && !e.archived)
       .filter((e) => !filter.areaId || e.area_id === filter.areaId)
       .filter((e) => e.starts_at! <= filter.to && (e.recurrence || (e.ends_at ?? e.starts_at!) >= filter.from))
@@ -174,6 +197,7 @@ export class MemoryRepository implements CentralRepository {
 
   async listTasks(filter: TaskFilter) {
     return this.entries
+      .filter(e => canEntry(this.actor, e))
       .filter((e) => e.type === "tarefa" && !e.archived)
       .filter((e) => !filter.areaId || e.area_id === filter.areaId)
       .filter((e) => filter.status === "todas" || (filter.status === "pendentes" ? !e.done_at : !!e.done_at))
@@ -184,6 +208,7 @@ export class MemoryRepository implements CentralRepository {
 
   async listDueReminders(now: string) {
     return this.entries
+      .filter(e => canEntry(this.actor, e))
       .filter((e) => e.remind_at && !e.reminded_at && e.remind_at <= now && !e.archived)
       .map((e) => this.withArea(e));
   }
@@ -195,6 +220,7 @@ export class MemoryRepository implements CentralRepository {
   }
 
   async listVersions(targetTable: Version["target_table"], targetId: string, limit: number) {
+    if (targetTable === "entries" ? !(await this.findEntryById(targetId)) : !(await this.findAreaById(targetId))) return [];
     return this.versions
       .filter((v) => v.target_table === targetTable && v.target_id === targetId)
       .sort((a, b) => b.created_at.localeCompare(a.created_at))
@@ -202,7 +228,9 @@ export class MemoryRepository implements CentralRepository {
   }
 
   async findVersionById(id: string) {
-    return this.versions.find((v) => v.id === id) ?? null;
+    const v = this.versions.find((v) => v.id === id);
+    if (!v || !(await this.listVersions(v.target_table, v.target_id, 100)).some(row => row.id === id)) return null;
+    return v;
   }
 
   async ping() {}

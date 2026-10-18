@@ -1,0 +1,13 @@
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NETLIFY_NEXT_PLUGIN_SKIP = "false"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
+# Next.js runtime is installed by Netlify's supported framework adapter.
+# No paid services, forms, image transformations or AI Gateway are provisioned.

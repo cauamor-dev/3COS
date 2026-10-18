@@ -116,7 +116,7 @@ function TaskRow({ task, onToggle, now }: { task: Entry; onToggle(): void; now: 
         {doneTask && <Check className="size-3.5" />}
       </button>
       <div className="min-w-0 flex-1">
-        <p className={cn("text-sm leading-snug", doneTask && "text-muted-foreground line-through")}>{task.title}</p>
+        <Link href={`/registros/${task.id}`} className={cn("text-sm leading-snug hover:text-lilac", doneTask && "text-muted-foreground line-through")}>{task.title}</Link>
         <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] text-muted-foreground">
           <Link href={`/areas/${task.area.slug}#${task.id}`} className="hover:text-lilac">
             /{task.area.slug}

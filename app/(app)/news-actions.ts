@@ -52,6 +52,9 @@ export async function saveNewsToMuralAction(id: string) {
 export async function saveNewsSettingsAction(settings: NewsSettings) {
   return run((news) => news.saveSettings(newsSettingsSchema.parse(settings)));
 }
+export async function newsPreferenceAction(topic:string,direction:"more"|"less") {
+ return run(async(news)=>{if(!topic.trim()||topic.length>60||!["more","less"].includes(direction))throw new Error("Preferência inválida.");const s=await news.settings();await news.saveSettings({...s,keywords:direction==="more"?[...new Set([...s.keywords,topic.slice(0,40)])].slice(-40):s.keywords.filter(k=>k!==topic),mutedTopics:direction==="less"?[...new Set([...s.mutedTopics,topic])].slice(-20):s.mutedTopics.filter(k=>k!==topic)});});
+}
 
 export async function addNewsFeedAction(input: NewsFeedInput): Promise<ActionResult<NewsFeed>> {
   return run(async (news) => {

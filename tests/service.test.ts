@@ -92,11 +92,11 @@ describe("versões", () => {
     expect(await central.versions("entries", registro.id)).toHaveLength(2);
   });
 
-  it("arquivar não gera versão e esconde o registro das leituras", async () => {
+  it("arquivar guarda versão recuperável e esconde o registro das leituras", async () => {
     const { registro } = await central.saveEntry({ area_slug: "axial", titulo: "Velho" }, "claude");
     await central.editEntry({ id: registro.id, arquivado: true }, "claude");
 
-    expect(repo.versions).toHaveLength(0);
+    expect(repo.versions).toHaveLength(1);
     const area = await central.readArea({ slug: "axial" });
     expect(area.registros).toHaveLength(0);
     const withArchived = await central.readArea({ slug: "axial", incluir_arquivados: true });

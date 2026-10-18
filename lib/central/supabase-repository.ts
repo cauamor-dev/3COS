@@ -1,5 +1,6 @@
 import type { PostgrestError, SupabaseClient } from "@supabase/supabase-js";
 import { CentralError } from "./errors";
+import { assertArea, HUMAN_ACTOR, SENSITIVE_ENTRY_IDS, type ActorContext } from "./access";
 import type { Source } from "./schemas";
 import type {
   Area,
@@ -19,7 +20,7 @@ import type {
 
 const ENTRY_COLUMNS =
   "id, area_id, type, title, content_md, tags, source, updated_by, pinned, archived, created_at, updated_at, " +
-  "starts_at, ends_at, all_day, location, recurrence, due_at, done_at, remind_at, reminded_at, links, image_url, priority, " +
+  "starts_at, ends_at, all_day, location, recurrence, due_at, done_at, remind_at, reminded_at, links, image_url, priority, revision, ai_access, owner_id, original_text, origin_chat_id, origin_chat_title, origin_chat_url, agent_id, external_id, " +
   "area:areas!inner(slug, name)";
 
 function check<T>(result: { data: T | null; error: PostgrestError | null }, what: string): T {
@@ -38,10 +39,24 @@ interface SearchRow extends Omit<Entry, "area"> {
 }
 
 export class SupabaseRepository implements CentralRepository {
-  constructor(private readonly db: SupabaseClient) {}
+  constructor(private readonly db: SupabaseClient, private readonly actor: ActorContext = HUMAN_ACTOR) {}
+  forActor(actor: ActorContext) { return new SupabaseRepository(this.db, actor); }
+
+  private entriesQuery(count = false) {
+    let query = this.db.from("entries").select(ENTRY_COLUMNS, count ? { count: "exact" } : {});
+    if (this.actor.kind !== "human") {
+      for (const id of SENSITIVE_ENTRY_IDS) query = query.neq("id", id);
+      const restricted = this.actor.grants?.filter(g => g.restricted && g.operations.includes("read")).map(g => g.areaId) ?? [];
+      query = restricted.length ? query.or(`ai_access.eq.shared,and(ai_access.eq.restricted,area_id.in.(${restricted.join(",")}))`) : query.eq("ai_access", "shared");
+    } else if (this.actor.userId) query = query.or(`owner_id.is.null,owner_id.eq.${this.actor.userId}`);
+    if (this.actor.kind === "integration") query = query.in("area_id", this.allowedAreas());
+    return query;
+  }
+  private allowedAreas() { return this.actor.grants?.filter(g => g.operations.includes("read")).map(g => g.areaId) ?? []; }
 
   async listAreas(filter: AreaFilter) {
     let query = this.db.from("areas").select("*", { count: "exact" });
+    if (this.actor.kind === "integration") query = query.in("id", this.allowedAreas());
     if (filter.statuses?.length) query = query.in("status", filter.statuses);
     if (filter.kind) query = query.eq("kind", filter.kind);
     const result = await query
@@ -51,18 +66,23 @@ export class SupabaseRepository implements CentralRepository {
   }
 
   async findAreaBySlug(slug: string) {
-    return check(await this.db.from("areas").select("*").eq("slug", slug).maybeSingle(), "buscar área") as Area | null;
+    let query = this.db.from("areas").select("*").eq("slug", slug);
+    if (this.actor.kind === "integration") query = query.in("id", this.allowedAreas());
+    return check(await query.maybeSingle(), "buscar área") as Area | null;
   }
 
   async findAreaById(id: string) {
+    assertArea(this.actor, id);
     return check(await this.db.from("areas").select("*").eq("id", id).maybeSingle(), "buscar área") as Area | null;
   }
 
   async insertArea(area: NewArea) {
+    if (this.actor.kind === "integration") throw new CentralError("forbidden", "Criação de áreas exige o proprietário.");
     return check(await this.db.from("areas").insert(area).select("*").single(), "criar área") as Area;
   }
 
   async updateArea(id: string, { touch, ...patch }: AreaPatch) {
+    assertArea(this.actor, id, "write");
     const values = touch ? { ...patch, updated_at: new Date().toISOString() } : patch;
     return check(
       await this.db.from("areas").update(values).eq("id", id).select("*").single(),
@@ -71,7 +91,7 @@ export class SupabaseRepository implements CentralRepository {
   }
 
   async listEntries(filter: EntryFilter) {
-    let query = this.db.from("entries").select(ENTRY_COLUMNS, { count: "exact" });
+    let query = this.entriesQuery(true);
     if (filter.areaId) query = query.eq("area_id", filter.areaId);
     if (filter.source) query = query.eq("source", filter.source);
     if (filter.type) query = query.eq("type", filter.type);
@@ -85,11 +105,13 @@ export class SupabaseRepository implements CentralRepository {
   }
 
   async findEntryById(id: string) {
-    const result = await this.db.from("entries").select(ENTRY_COLUMNS).eq("id", id).maybeSingle();
+    const result = await this.entriesQuery().eq("id", id).maybeSingle();
     return check(result, "buscar registro") as unknown as Entry | null;
   }
+  async findEntryByExternalId(externalId:string,clientId:string){return check(await this.entriesQuery().eq("external_id",externalId).eq("origin_client_id",clientId).maybeSingle(),"localizar importação") as unknown as Entry|null;}
 
   async insertEntry(entry: NewEntry) {
+    assertArea(this.actor, entry.area_id, "write");
     const result = await this.db
       .from("entries")
       .insert({ ...entry, updated_by: entry.source })
@@ -98,13 +120,22 @@ export class SupabaseRepository implements CentralRepository {
     return check(result, "salvar registro") as unknown as Entry;
   }
 
-  async updateEntry(id: string, patch: EntryPatch) {
-    const result = await this.db.from("entries").update(patch).eq("id", id).select(ENTRY_COLUMNS).single();
-    return check(result, "atualizar registro") as unknown as Entry;
+  async updateEntry(id: string, patch: EntryPatch, expectedRevision?: number) {
+    const current = await this.findEntryById(id);
+    if (!current) throw new CentralError("not_found", "Registro não encontrado.");
+    assertArea(this.actor, current.area_id, "write");
+    if (patch.area_id) assertArea(this.actor, patch.area_id, "write");
+    const result = await this.db.rpc("edit_entry_atomic", { p_id: id, p_revision: expectedRevision ?? current.revision, p_patch: patch });
+    if (result.error?.code === "40001") throw new CentralError("conflict", "Registro alterado por outra sessão. Reabra a versão atual antes de salvar.");
+    check(result, "atualizar registro");
+    return (await this.findEntryById(id))!;
   }
 
   async searchEntries(filter: SearchFilter) {
-    const result = await this.db.rpc("search_entries", {
+    const result = await this.db.rpc("search_entries_scoped", {
+      p_ai: this.actor.kind !== "human",
+      p_areas: this.actor.kind === "integration" ? this.allowedAreas() : null,
+      p_restricted: this.actor.grants?.filter(g => g.restricted && g.operations.includes("read")).map(g => g.areaId) ?? [],
       q: filter.query,
       p_area_id: filter.areaId ?? null,
       p_type: filter.type ?? null,
@@ -125,18 +156,16 @@ export class SupabaseRepository implements CentralRepository {
 
   async countEntriesBySource(since: string) {
     const rows = check(
-      await this.db.from("entries").select("source").eq("archived", false).gte("created_at", since).limit(5000),
+      await this.entriesQuery().eq("archived", false).gte("created_at", since).limit(5000),
       "contar registros",
-    ) as { source: Source }[];
+    ) as unknown as { source: Source }[];
     const counts: Partial<Record<Source, number>> = {};
     for (const row of rows) counts[row.source] = (counts[row.source] ?? 0) + 1;
     return counts;
   }
 
   async listEvents(filter: { from: string; to: string; areaId?: string }) {
-    let query = this.db
-      .from("entries")
-      .select(ENTRY_COLUMNS)
+    let query = this.entriesQuery()
       .eq("type", "evento")
       .eq("archived", false)
       .lte("starts_at", filter.to)
@@ -147,7 +176,7 @@ export class SupabaseRepository implements CentralRepository {
   }
 
   async listTasks(filter: TaskFilter) {
-    let query = this.db.from("entries").select(ENTRY_COLUMNS).eq("type", "tarefa").eq("archived", false);
+    let query = this.entriesQuery().eq("type", "tarefa").eq("archived", false);
     if (filter.areaId) query = query.eq("area_id", filter.areaId);
     if (filter.status === "pendentes") query = query.is("done_at", null);
     if (filter.status === "concluidas") query = query.not("done_at", "is", null);
@@ -161,9 +190,7 @@ export class SupabaseRepository implements CentralRepository {
   }
 
   async listDueReminders(now: string) {
-    const result = await this.db
-      .from("entries")
-      .select(ENTRY_COLUMNS)
+    const result = await this.entriesQuery()
       .eq("archived", false)
       .is("reminded_at", null)
       .lte("remind_at", now)
@@ -176,6 +203,7 @@ export class SupabaseRepository implements CentralRepository {
   }
 
   async listVersions(targetTable: Version["target_table"], targetId: string, limit: number) {
+    if (targetTable === "entries" ? !(await this.findEntryById(targetId)) : !(await this.findAreaById(targetId))) return [];
     const result = await this.db
       .from("versions")
       .select("*")
@@ -187,7 +215,9 @@ export class SupabaseRepository implements CentralRepository {
   }
 
   async findVersionById(id: string) {
-    return check(await this.db.from("versions").select("*").eq("id", id).maybeSingle(), "buscar versão") as Version | null;
+    const version = check(await this.db.from("versions").select("*").eq("id", id).maybeSingle(), "buscar versão") as Version | null;
+    if (!version || !(await this.listVersions(version.target_table, version.target_id, 100)).some(v => v.id === id)) return null;
+    return version;
   }
 
   async ping() {

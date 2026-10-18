@@ -1,4 +1,4 @@
-export type CentralErrorCode = "not_found" | "invalid" | "conflict";
+export type CentralErrorCode = "not_found" | "invalid" | "conflict" | "forbidden" | "quota";
 
 export class CentralError extends Error {
   constructor(

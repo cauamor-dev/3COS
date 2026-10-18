@@ -26,23 +26,25 @@ afterEach(() => {
   upload.mockClear();
 });
 
-describe("cópia de imagem por link", () => {
-  it("segue redirecionamento para outro site público", async () => {
+describe("URLs remotas não são buscadas pelo servidor", () => {
+  it("mantém referência externa sem acessar o servidor remoto", async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(redirect("https://cdn.site.com/a.png")).mockResolvedValueOnce(image());
     vi.stubGlobal("fetch", fetchMock);
-    expect(await persistRemoteImage("https://site.com/a.png")).toMatch(/^https:\/\/bucket\/.+\.png$/);
-    expect(fetchMock).toHaveBeenLastCalledWith("https://cdn.site.com/a.png", expect.objectContaining({ redirect: "manual" }));
+    expect(await persistRemoteImage("https://site.com/a.png")).toBe("https://site.com/a.png");
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("recusa redirecionamento para rede interna", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(redirect("http://169.254.169.254/latest/meta-data")));
-    await expect(persistRemoteImage("https://site.com/a.png")).rejects.toThrow("Redirecionamento não permitido.");
+    await persistRemoteImage("https://site.com/a.png");
+    expect(fetch).not.toHaveBeenCalled();
     expect(upload).not.toHaveBeenCalled();
   });
 
   it("para depois de muitos redirecionamentos", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => redirect("https://site.com/loop")));
-    await expect(persistRemoteImage("https://site.com/a.png")).rejects.toThrow("Redirecionamento não permitido.");
+    await persistRemoteImage("https://site.com/a.png");
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it("não baixa endereço interno nem link que já é do bucket", async () => {

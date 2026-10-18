@@ -10,6 +10,12 @@ import { attachmentNote, type ChloeFiles } from "@/lib/chloe/attachment-note";
 import { type Command, interpretCommand } from "@/lib/chloe/command";
 import { chloeAvailable, pickTier, providerChat } from "@/lib/chloe/llm";
 import type { ActionResult } from "./actions";
+import { CHLOE_ACTOR } from "@/lib/central/access";
+import { captureInput, captureNote } from "@/lib/chloe/capture";
+import { teamFor } from "@/lib/team/server";
+import { chloeStatus } from "@/lib/chloe/llm";
+import type { ChatMessage } from "@/lib/chloe/llm";
+import { teamRequestRoute } from "@/lib/chloe/team-routing";
 
 export interface ChloeReply {
   reply: string;
@@ -18,6 +24,9 @@ export interface ChloeReply {
   /** Entry created by the command, so the panel can offer "Desfazer". */
   undoId?: string;
   href?: string;
+  duplicates?: { id: string; title: string }[];
+  conversationId?: string;
+  status?: string;
 }
 
 const TZ = "America/Sao_Paulo";
@@ -43,13 +52,81 @@ const brl = (value: number) =>
 const when = (iso: string) => `${day(iso)}, ${time(iso)}`;
 
 /** Runs a quick request typed (or spoken) on the home command bar. */
-export async function chloeCommandAction(
+async function executeChloeCommand(
   text: string,
   files?: ChloeFiles,
+  options?: {
+    mode?: "anotar" | "perguntar" | "equipe";
+    conversationId?: string;
+  },
+  history?: ChatMessage[],
 ): Promise<ActionResult<ChloeReply>> {
   const member = await getMember();
   if (!member) return { ok: false, error: "Sessão expirada. Entre novamente." };
   const central = member.central;
+  const parsed = captureInput.safeParse({
+    text: text || (files?.links?.length ? "Anexo" : ""),
+    mode: options?.mode,
+  });
+  if (!parsed.success)
+    return {
+      ok: false,
+      error:
+        "Escreva até 50.000 caracteres; textos maiores devem ser anexados.",
+    };
+  const mode = parsed.data.mode;
+  const explicitCommand =
+    mode === "anotar" &&
+    /^(me lembr[ae]|lembrete\s*:|(?:marca|marcar|agenda|agendar)\s|tarefa\s*:)/i.test(
+      text.trim(),
+    );
+
+  if (mode === "anotar" && !explicitCommand && !files?.links?.length) {
+    try {
+      const saved = await captureNote(central, text);
+      refresh();
+      return {
+        ok: true,
+        data: {
+          reply: "Anotação salva integralmente na inbox.",
+          undoId: saved.registro.id,
+          href: `/registros/${saved.registro.id}`,
+          duplicates: saved.duplicates,
+          status: chloeStatus().message,
+        },
+      };
+    } catch (error) {
+      return { ok: false, error: describeError(error).message };
+    }
+  }
+  if (mode === "equipe") {
+    try {
+      const result = await teamFor(central.actor).createWork({
+        area_slug: "inbox",
+        objective: text,
+        ...teamRequestRoute(text),
+        expected_output:
+          "Resposta ao pedido com fontes, entrega acessível e próximo passo. Responsável sugerido pelas palavras do pedido; ajuste na Equipe se necessário. Cauã constrói no Claude Code; QA após seu aviso.",
+        acceptance_criteria:
+          "Atender ao pedido preservado, declarar hipóteses e impedimentos; nenhuma ação externa sem autorização.",
+        idempotency_key: crypto.randomUUID(),
+      });
+      refresh();
+      return { ok: true, data: { reply: result.message, href: "/equipe" } };
+    } catch (error) {
+      const saved = await captureNote(central, text);
+      refresh();
+      return {
+        ok: true,
+        data: {
+          reply:
+            "Salvei sua anotação; a fila da equipe está indisponível. O encaminhamento ficou pendente.",
+          href: `/registros/${saved.registro.id}`,
+          status: describeError(error).message,
+        },
+      };
+    }
+  }
 
   // With files attached, everything goes to the inbox as a note (sorting by area comes later).
   if (files?.links?.length) {
@@ -59,30 +136,67 @@ export async function chloeCommandAction(
       refresh();
       return {
         ok: true,
-        data: { reply: `Guardei na inbox: ${entry.titulo}.`, undoId: registro.id, href: `/areas/inbox#${registro.id}` },
+        data: {
+          reply: `Guardei na inbox: ${entry.titulo}.`,
+          undoId: registro.id,
+          href: `/registros/${registro.id}`,
+        },
       };
     } catch (error) {
       return { ok: false, error: describeError(error).message };
     }
   }
 
-  const command = interpretCommand(text.slice(0, 500));
+  const command = interpretCommand(text);
   if (!command) return { ok: false, error: "Escreva o que você precisa." };
 
   // Rules first (instant, free); a model only for what they did not understand.
-  if (command.kind === "nota" && command.guessed && chloeAvailable()) {
+  if (mode === "perguntar" && chloeAvailable()) {
     try {
-      const result = await runChloe(text.slice(0, 500), { central, chat: providerChat, tier: pickTier(text) });
+      const ai = central.asActor(CHLOE_ACTOR);
+      const result = await runChloe(text, {
+        central: ai,
+        chat: providerChat,
+        tier: pickTier(text),
+        readOnly: true,
+        history,
+      });
       if (result.undoId) refresh();
-      return { ok: true, data: { reply: result.reply, ...(result.undoId && { undoId: result.undoId, href: `/areas/inbox#${result.undoId}` }) } };
+      return {
+        ok: true,
+        data: {
+          reply: result.reply,
+          ...(result.undoId && {
+            undoId: result.undoId,
+            href: `/registros/${result.undoId}`,
+          }),
+        },
+      };
     } catch {
       // Providers down or rate limited: fall through and keep the request as a note.
     }
   }
 
   try {
+    if (mode === "perguntar" && command.kind !== "consulta") {
+      const result = await central
+        .asActor(CHLOE_ACTOR)
+        .search({ consulta: text.slice(0, 180), limite: 5 });
+      return {
+        ok: true,
+        data: {
+          reply: result.total
+            ? `Encontrei ${result.total} registros permitidos. Abra as fontes abaixo.`
+            : "Não encontrei registros permitidos para esta pergunta. A IA está desativada; posso buscar por palavras.",
+          items: result.resultados.map(
+            (r) => `${r.titulo}: /registros/${r.id}`,
+          ),
+          status: chloeStatus().message,
+        },
+      };
+    }
     if (command.kind === "consulta") {
-      const agenda = await central.agenda({
+      const agenda = await central.asActor(CHLOE_ACTOR).agenda({
         de: command.from,
         ate: command.to,
       });
@@ -110,12 +224,16 @@ export async function chloeCommandAction(
       };
     }
 
-    const { registro } = await central.saveEntry(toEntry(command), "manual");
+    const fields = toEntry(command);
+    const { registro } = await central.saveEntry(
+      { ...fields, original_text: text, conteudo: fields.conteudo || text },
+      "manual",
+    );
     refresh();
 
     const reply =
       command.kind === "vigia"
-        ? `Combinado. Pedi para a Vega vigiar o preço: ${command.product}${command.target ? ` (alvo ${brl(command.target)})` : ""}. Te aviso quando aparecer promoção.`
+        ? `Pedido salvo na fila para revisar: ${command.product}${command.target ? ` (alvo ${brl(command.target)})` : ""}. Rotina externa ainda não confirmada.`
         : command.kind === "evento"
           ? `Marquei na agenda: ${command.title} · ${command.allDay ? `${day(`${command.start}T12:00:00Z`)}, dia todo` : when(command.start)}.`
           : command.kind === "lembrete"
@@ -127,11 +245,88 @@ export async function chloeCommandAction(
                 : `Anotado na inbox: ${command.title}.`;
     return {
       ok: true,
-      data: { reply, undoId: registro.id, href: `/areas/inbox#${registro.id}` },
+      data: { reply, undoId: registro.id, href: `/registros/${registro.id}` },
     };
   } catch (error) {
     return { ok: false, error: describeError(error).message };
   }
+}
+
+export async function chloeCommandAction(
+  text: string,
+  files?: ChloeFiles,
+  options?: {
+    mode?: "anotar" | "perguntar" | "equipe";
+    conversationId?: string;
+  },
+): Promise<ActionResult<ChloeReply>> {
+  const member = await getMember();
+  if (!member) return { ok: false, error: "Sessão expirada. Entre novamente." };
+  let conversationId: string | undefined;
+  const history: ChatMessage[] = [];
+  if (member.central.actor.userId) {
+    if (
+      options?.conversationId &&
+      /^[0-9a-f-]{36}$/i.test(options.conversationId)
+    ) {
+      const c = await member.supabase
+        .from("chloe_conversations")
+        .select("id")
+        .eq("id", options.conversationId)
+        .eq("owner_id", member.central.actor.userId)
+        .maybeSingle();
+      conversationId = c.data?.id;
+    }
+    if (!conversationId) {
+      const c = await member.supabase
+        .from("chloe_conversations")
+        .insert({ owner_id: member.central.actor.userId })
+        .select("id")
+        .single();
+      conversationId = c.data?.id;
+    }
+    if (conversationId && options?.mode === "perguntar") {
+      const previous = await member.supabase
+        .from("chloe_messages")
+        .select("role,content,entry_id")
+        .eq("conversation_id", conversationId)
+        .order("created_at", { ascending: false })
+        .limit(6);
+      for (const msg of [...(previous.data ?? [])].reverse()) {
+        if (msg.entry_id) {
+          const permitted = await member.central
+            .asActor(CHLOE_ACTOR)
+            .getEntry(msg.entry_id)
+            .catch(() => null);
+          if (!permitted) continue;
+        }
+        history.push({
+          role: msg.role as "user" | "assistant",
+          content: msg.content.slice(0, 1500),
+        });
+      }
+    }
+  }
+  const result = await executeChloeCommand(text, files, options, history);
+  if (result.ok && conversationId) {
+    const entryId = result.data.undoId ?? null;
+    await member.supabase.from("chloe_messages").insert([
+      {
+        conversation_id: conversationId,
+        role: "user",
+        content: text.slice(0, 50000),
+        entry_id: entryId,
+      },
+      {
+        conversation_id: conversationId,
+        role: "assistant",
+        content: result.data.reply,
+        entry_id: entryId,
+      },
+    ]);
+    result.data.conversationId = conversationId;
+  }
+  return result;
 }
 
 function toEntry(

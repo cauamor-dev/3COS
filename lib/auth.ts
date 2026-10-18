@@ -6,6 +6,7 @@ import { SupabaseRepository } from "@/lib/central/supabase-repository";
 import { serverEnv } from "@/lib/env";
 import { MemoryNewsStore, SupabaseNewsStore } from "@/lib/news/store";
 import { createUserClient } from "@/lib/supabase/server";
+import { persistRemoteImage,linkEntryFiles } from "@/lib/files/server";
 
 const globalForNews = globalThis as unknown as { demoNews?: MemoryNewsStore };
 function demoNews() {
@@ -27,7 +28,8 @@ export async function getMember({ inPrivateCache = false } = {}) {
   const email = typeof data?.claims.email === "string" ? data.claims.email : null;
   if (!isAllowedEmail(email)) return null;
   const news = new SupabaseNewsStore(supabase);
-  return { email: email!, supabase, central: new CentralService(new SupabaseRepository(supabase), news), news };
+  const userId = typeof data?.claims.sub === "string" ? data.claims.sub : undefined;
+  return { email: email!, userId, supabase, central: new CentralService(new SupabaseRepository(supabase), news, {persistImage:persistRemoteImage,linkToEntry:linkEntryFiles}, { kind: "human", id: userId ?? "member", userId, source: "manual" }), news };
 }
 
 /**

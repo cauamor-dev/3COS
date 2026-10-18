@@ -1,14 +1,28 @@
 "use client";
 
 import { cn } from "cn";
-import { CalendarDays, CheckSquare, Home, Menu, Newspaper, Plus, Search } from "lucide-react";
+import {
+  CalendarDays,
+  CheckSquare,
+  Home,
+  Menu,
+  Newspaper,
+  Plus,
+  Search,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "@/components/brand/logo";
 import { useCentral } from "@/components/providers/central-provider";
 import { Button } from "@/components/ui/button";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { isActive } from "./nav-items";
 import { SidebarFooter, SidebarNav } from "./sidebar";
 
@@ -28,31 +42,31 @@ export function MobileHeader() {
         <Logo />
       </Link>
       <div className="flex items-center gap-1">
-      <Button variant="ghost" size="icon" asChild>
-        <Link href="/buscar" aria-label="Buscar">
-          <Search />
-        </Link>
-      </Button>
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button variant="ghost" size="icon" aria-label="Abrir menu">
-            <Menu />
-          </Button>
-        </SheetTrigger>
-        <SheetContent
-          side="right"
-          className="flex w-72 flex-col gap-0 border-l bg-background/95 p-4 pt-[calc(env(safe-area-inset-top)+1rem)] pb-[calc(env(safe-area-inset-bottom)+1rem)] backdrop-blur-xl"
-        >
-          <SheetHeader className="mb-4 p-0">
-            <SheetTitle className="sr-only">Menu</SheetTitle>
-            <Logo />
-          </SheetHeader>
-          <div className="min-h-0 flex-1">
-            <SidebarNav onNavigate={() => setOpen(false)} />
-          </div>
-          <SidebarFooter />
-        </SheetContent>
-      </Sheet>
+        <Button variant="ghost" size="icon" asChild>
+          <Link href="/buscar" aria-label="Buscar">
+            <Search />
+          </Link>
+        </Button>
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Abrir menu">
+              <Menu />
+            </Button>
+          </SheetTrigger>
+          <SheetContent
+            side="right"
+            className="flex w-72 flex-col gap-0 border-l bg-background/95 p-4 pt-[calc(env(safe-area-inset-top)+1rem)] pb-[calc(env(safe-area-inset-bottom)+1rem)] backdrop-blur-xl"
+          >
+            <SheetHeader className="mb-4 p-0">
+              <SheetTitle className="sr-only">Menu</SheetTitle>
+              <Logo />
+            </SheetHeader>
+            <div className="min-h-0 flex-1">
+              <SidebarNav onNavigate={() => setOpen(false)} />
+            </div>
+            <SidebarFooter />
+          </SheetContent>
+        </Sheet>
       </div>
     </header>
   );
@@ -83,7 +97,9 @@ export function BottomNav() {
             isActive(pathname, href) && "bg-primary/15 text-foreground",
           )}
         >
-          <Icon className={cn("size-5", isActive(pathname, href) && "text-lilac")} />
+          <Icon
+            className={cn("size-5", isActive(pathname, href) && "text-lilac")}
+          />
           {label}
         </Link>
       ))}

@@ -16,8 +16,9 @@ async function loadAgenda() {
   const member = await getCachedMember();
   if (!member) return null;
   const { central } = member;
-  const from = startOfLocalDay();
-  const to = addDays(from, 60);
+  const today=startOfLocalDay();
+  const from = addDays(today,-40);
+  const to = addDays(today, 100);
   const [occurrences, tasks] = await Promise.all([central.eventsBetween(from, to), central.tasksForPanel()]);
 
   const items: AgendaItem[] = [
@@ -33,7 +34,7 @@ async function loadAgenda() {
       .map((task) => ({ key: task.id, kind: "tarefa" as const, entry: task, start: task.due_at!, end: null })),
   ].sort((a, b) => a.start.localeCompare(b.start));
 
-  return { items, todayKey: dayKey(from.getTime() + 12 * 3600_000) };
+  return { items, todayKey: dayKey(today.getTime() + 12 * 3600_000) };
 }
 
 async function Agenda() {

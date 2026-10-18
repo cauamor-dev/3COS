@@ -64,7 +64,7 @@ export function interpretCommand(input: string, now = new Date()): Command | nul
     return { kind: "consulta", from: day, to: day, label };
   }
 
-  if (WATCH.test(lower)) return watch(raw);
+  if (WATCH.test(lower) && !/\b(aba|feed|questao|funcao|funcionalidade|para voce)\b/.test(lower)) return watch(raw);
   if (IDEA.test(lower)) return { kind: "ideia", title: short(tidy(raw)), content: raw };
   if (NOTE.test(lower)) return { kind: "nota", title: short(tidy(raw)), content: raw };
 

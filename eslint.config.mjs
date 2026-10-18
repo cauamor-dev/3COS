@@ -13,7 +13,7 @@ const eslintConfig = defineConfig([
       ],
     },
   },
-  globalIgnores([".next/**", "out/**", "build/**", "next-env.d.ts", "supabase/.temp/**"]),
+  globalIgnores([".next/**", ".netlify/**", "tools/marketing/**", ".private-backups/**", ".local-reports/**", "out/**", "build/**", "next-env.d.ts", "supabase/.temp/**"]),
 ]);
 
 export default eslintConfig;

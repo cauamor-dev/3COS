@@ -55,6 +55,7 @@ export function MotionProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     document.documentElement.dataset.motion = enabled ? "on" : "off";
+    document.documentElement.dataset.performance = enabled ? "full" : "light";
   }, [enabled]);
 
   useEffect(() => {

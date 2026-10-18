@@ -35,7 +35,7 @@ export function registerCentralTools(server: McpServer, getCentral: () => Centra
       async (input, ctx): Promise<CallToolResult> => {
         try {
           const source = sourceFrom(ctx.http?.authInfo?.clientId);
-          const result = await operation.run(getCentral(), input, source);
+          const result = await operation.run(getCentral().asActor({ kind: "system", id: `legacy-${source}`, source }), input, source);
           return { content: [{ type: "text", text: JSON.stringify(result) }] };
         } catch (error) {
           const { message } = describeError(error);

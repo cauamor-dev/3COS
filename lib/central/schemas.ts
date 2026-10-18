@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const SOURCES = ["claude", "chatgpt", "manual", "cursor"] as const;
+export const SOURCES = ["claude", "chatgpt", "manual", "cursor", "grok", "chloe", "codex", "opencode", "system"] as const;
 export const AREA_KINDS = ["projeto", "trabalho", "faculdade", "curso", "pessoal", "ideia", "perfil"] as const;
 export const AREA_STATUSES = ["ativo", "pausado", "concluido", "arquivado"] as const;
 export const ENTRY_TYPES = ["contexto", "decisao", "progresso", "tarefa", "nota", "ideia", "evento", "post"] as const;
@@ -49,9 +49,9 @@ const booleanish = z
   .transform((value) => value === true || value === "true");
 
 const linkSchema = z.object({
-  url: z.url().describe("Endereço do link"),
+  url: z.url().refine(value=>["https:","http:"].includes(new URL(value).protocol),"Use um link HTTP ou HTTPS").describe("Endereço do link"),
   titulo: z.string().trim().max(200).optional().describe("Título do link"),
-  imagem: z.url().optional().describe("Imagem de prévia do link"),
+  imagem: z.url().refine(value=>["https:","http:"].includes(new URL(value).protocol)).optional().describe("Imagem de prévia do link"),
 });
 
 export type EntryLink = z.infer<typeof linkSchema>;
@@ -65,7 +65,7 @@ const scheduleFields = {
   prazo: isoDate.optional().describe("Prazo da tarefa, com fuso. Ex.: 2026-10-20T18:00:00-03:00"),
   lembrar_em: isoDate.optional().describe("Quando avisar o usuário, com fuso. Ex.: 2026-10-20T08:00:00-03:00"),
   links: z.array(linkSchema).max(10).optional().describe("Links de fontes e referências"),
-  imagem: z.url().optional().describe("URL de imagem para destacar o registro (útil em posts)"),
+  imagem: z.url().refine(value=>["https:","http:"].includes(new URL(value).protocol)).optional().describe("URL de imagem para destacar o registro (útil em posts)"),
   prioridade: z.enum(PRIORITIES).optional().describe("Prioridade (alta, media, baixa). Use alta só para o que é realmente urgente"),
 };
 
@@ -107,6 +107,12 @@ export const searchInput = z.object({
 });
 
 export const saveEntryInput = z.object({
+  ai_access: z.enum(["shared", "restricted", "private"]).optional(),
+  original_text: z.string().max(50_000).optional(),
+  origin_chat_id: z.string().max(200).optional(),
+  origin_chat_title: z.string().max(200).optional(),
+  origin_chat_url: z.url().optional(),
+  external_id: z.string().max(300).optional(),
   area_slug: slugInput.default("inbox").describe("Área de destino. Se não existir, é criada. Use inbox se não souber."),
   area_nome: z.string().trim().min(1).max(120).optional().describe("Nome legível da área, usado só se ela for criada agora"),
   area_tipo: areaKindSchema.optional().describe("Tipo da área, usado só se ela for criada agora. Padrão: projeto"),
@@ -130,6 +136,9 @@ export const updateSummaryInput = z.object({
 });
 
 export const editEntryInput = z.object({
+  limpar:z.array(z.enum(["fim","prazo","lembrar_em","recorrencia","local"])).max(5).optional(),
+  revision: z.number().int().min(1).optional().describe("Revisão lida antes da edição; retorna conflito se mudou"),
+  ai_access: z.enum(["shared", "restricted", "private"]).optional(),
   id: z.uuid().describe("ID do registro"),
   titulo: z.string().trim().min(1).max(200).optional(),
   conteudo: z.string().max(50_000).optional().describe("Novo conteúdo completo em markdown"),

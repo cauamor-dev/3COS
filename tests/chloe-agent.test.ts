@@ -38,12 +38,13 @@ describe("Chloe com ferramentas", () => {
     expect(seen[1].at(-1)).toMatchObject({ role: "tool", tool_call_id: "c-criar_evento" });
   });
 
-  it("delega para a Vega com as tags certas", async () => {
+  it("não anuncia uma delegação operacional quando a fila está ausente", async () => {
     const central = new CentralService(new MemoryRepository());
-    const { chat } = fakeChat([call("delegar", { para: "vega", titulo: "Comparar notebooks", pedido: "Até R$ 5 mil, para programar" }), { role: "assistant", content: "Passei para a Vega." }]);
+    const { chat,seen } = fakeChat([call("delegar", { para: "vega", titulo: "Comparar notebooks", pedido: "Até R$ 5 mil, para programar" }), { role: "assistant", content: "A fila está indisponível." }]);
     await runChloe("pesquisa um notebook bom pra programar até 5 mil", { central, chat, tier: "raciocinio" });
     const { tarefas } = await central.listTasks();
-    expect(tarefas[0]).toMatchObject({ titulo: "Comparar notebooks", tags: ["vega", "chloe"] });
+    expect(tarefas).toHaveLength(0);
+    expect(seen[1].at(-1)?.content).toContain("Nenhum agente externo foi acionado");
   });
 
   it("devolve o erro da ferramenta ao modelo em vez de quebrar", async () => {

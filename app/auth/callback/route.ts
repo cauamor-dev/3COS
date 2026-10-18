@@ -1,11 +1,14 @@
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
+import { cookies } from "next/headers";
 import { safeRedirectPath } from "@/lib/http/auth";
 import { createUserClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
-  const destination = safeRedirectPath(searchParams.get("next"));
+  const destination = safeRedirectPath(
+    searchParams.get("next") ?? (await cookies()).get("3c_login_next")?.value,
+  );
 
   const supabase = await createUserClient();
   const code = searchParams.get("code");
@@ -19,5 +22,10 @@ export async function GET(request: NextRequest) {
       : { error: new Error("missing code") };
 
   if (error) return NextResponse.redirect(`${origin}/login?erro=link`);
-  return NextResponse.redirect(`${origin}${destination}`);
+  const response = NextResponse.redirect(`${origin}${destination}`);
+  response.cookies.set("3c_login_next", "", {
+    path: "/auth/callback",
+    maxAge: 0,
+  });
+  return response;
 }

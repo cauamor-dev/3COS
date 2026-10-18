@@ -37,6 +37,7 @@ const CANVAS_COLOR: Record<Source, string> = {
   chatgpt: "#6fd8a6",
   manual: "#ece9f5",
   cursor: "#7cc4ec",
+  grok: "#a78bfa", chloe: "#a78bfa", codex: "#a78bfa", opencode: "#a78bfa", system: "#888888",
 };
 
 // Fixed sky: generated once so stars don't jump between renders.

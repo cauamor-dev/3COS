@@ -3,7 +3,8 @@
 import { FileText, Loader2, Paperclip, X } from "lucide-react";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
-import { ACCEPTED_FILES, FILES_BUCKET, MAX_FILE_BYTES, SIGNED_URL_SECONDS, storagePath, typeFromName } from "@/lib/files/shared";
+import { ACCEPTED_FILES, FILES_BUCKET, MAX_FILE_BYTES, MAX_VIDEO_BYTES, typeFromName } from "@/lib/files/shared";
+import { reserveFileAction, finalizeFileAction } from "@/app/(app)/file-actions";
 import { createBrowserSupabase } from "@/lib/supabase/browser";
 
 export interface Attachment {
@@ -33,15 +34,17 @@ async function compress(file: File): Promise<Blob> {
 export async function uploadAttachment(file: File): Promise<Attachment> {
   const image = file.type.startsWith("image/");
   const body = image ? await compress(file) : file;
-  if (body.size > MAX_FILE_BYTES) throw new Error(`${file.name}: maior que 10 MB.`);
+  if (body.size > (file.type === "video/mp4" ? MAX_VIDEO_BYTES : MAX_FILE_BYTES)) throw new Error(`${file.name}: tamanho acima do limite.`);
   const contentType = body.type || file.type || typeFromName(file.name) || "application/octet-stream";
-  const path = storagePath(contentType);
+  const reservation = await reserveFileAction({ name: file.name, mime: contentType, size: body.size });
+  if (!reservation.ok) throw new Error(reservation.error);
+  const { id, path, token } = reservation.data;
   const bucket = createBrowserSupabase().storage.from(FILES_BUCKET);
-  const { error } = await bucket.upload(path, body, { contentType });
+  const { error } = await bucket.uploadToSignedUrl(path, token, body, { contentType });
   if (error) throw new Error(error.message);
-  const { data, error: signError } = await bucket.createSignedUrl(path, SIGNED_URL_SECONDS);
-  if (signError || !data) throw new Error(signError?.message ?? "Não foi possível gerar o link.");
-  return { url: data.signedUrl, name: file.name || (image ? "Imagem" : "Arquivo"), image };
+  const finalized = await finalizeFileAction(id);
+  if (!finalized.ok) throw new Error(finalized.error);
+  return { url: new URL(finalized.data.url, window.location.origin).toString(), name: file.name || (image ? "Imagem" : "Arquivo"), image };
 }
 
 export function useAttachments() {

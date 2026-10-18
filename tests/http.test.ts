@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { bearerToken, safeEqual, safeRedirectPath } from "@/lib/http/auth";
+import {
+  bearerToken,
+  safeEqual,
+  safeRedirectPath,
+  loginOrigin,
+} from "@/lib/http/auth";
 import { createRateLimiter } from "@/lib/http/rate-limit";
 
 describe("safeEqual", () => {
@@ -13,7 +18,9 @@ describe("safeEqual", () => {
 
 describe("bearerToken", () => {
   it("extrai o token do header", () => {
-    const request = new Request("https://x", { headers: { authorization: "Bearer  abc123 " } });
+    const request = new Request("https://x", {
+      headers: { authorization: "Bearer  abc123 " },
+    });
     expect(bearerToken(request)).toBe("abc123");
     expect(bearerToken(new Request("https://x"))).toBeNull();
   });
@@ -33,12 +40,32 @@ describe("rate limit", () => {
 });
 
 describe("safeRedirectPath", () => {
+  it("mantém callback no preview permitido e recusa origem externa", () => {
+    const base = "https://central3c-caua.netlify.app";
+    const preview =
+      "https://codex-evolution-preview--central3c-caua.netlify.app";
+    expect(loginOrigin(preview, base)).toBe(preview);
+    expect(loginOrigin("https://evil.example", base)).toBe(base);
+    expect(loginOrigin("http://localhost:3002", base)).toBe(base);
+    expect(loginOrigin("http://localhost:3002", base, true)).toBe(
+      "http://localhost:3002",
+    );
+  });
   it("mantém caminhos internos", () => {
     expect(safeRedirectPath("/areas/axial?x=1#y")).toBe("/areas/axial?x=1#y");
   });
 
   it("bloqueia destinos fora do app", () => {
-    for (const value of ["//evil.com", "/\\evil.com", "/\\/evil.com", "https://evil.com", "evil.com", "/\tevil", null, undefined]) {
+    for (const value of [
+      "//evil.com",
+      "/\\evil.com",
+      "/\\/evil.com",
+      "https://evil.com",
+      "evil.com",
+      "/\tevil",
+      null,
+      undefined,
+    ]) {
       expect(safeRedirectPath(value)).toBe("/");
     }
   });

@@ -4,10 +4,12 @@ project_id = "central-3c"
 
 [auth]
 enabled = true
-site_url = "https://central3c-caua.vercel.app"
+site_url = "https://central3c-caua.netlify.app"
 additional_redirect_urls = [
   "https://central3c-caua.vercel.app/auth/callback",
   "http://localhost:3000/auth/callback",
+  "https://central3c-caua.netlify.app/auth/callback",
+  "https://codex-evolution-preview--central3c-caua.netlify.app/auth/callback",
 ]
 # Cadastro fechado: a conta do dono é criada pelo `npm run db:seed`.
 enable_signup = false

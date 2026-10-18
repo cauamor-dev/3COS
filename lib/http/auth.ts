@@ -1,7 +1,10 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
 // Hashing first gives both buffers the same length, so the comparison time never leaks the secret's size.
-export function safeEqual(received: string | null | undefined, expected: string): boolean {
+export function safeEqual(
+  received: string | null | undefined,
+  expected: string,
+): boolean {
   if (!received || !expected) return false;
   const a = createHash("sha256").update(received).digest();
   const b = createHash("sha256").update(expected).digest();
@@ -27,4 +30,24 @@ export function safeRedirectPath(value: unknown): string {
   if (typeof value !== "string" || !value.startsWith("/")) return "/";
   if (/^\/[\\/]/.test(value) || /[\u0000-\u001f\\]/.test(value)) return "/";
   return value;
+}
+/** Only exact owned origins may receive an authentication callback. */
+export function loginOrigin(
+  origin: string | null,
+  configuredOrigin: string,
+  development = false,
+) {
+  const canonical = new URL(configuredOrigin).origin;
+  const allowed = new Set([
+    canonical,
+    "https://central3c-caua.vercel.app",
+    "https://central3c-caua.netlify.app",
+    "https://codex-evolution-preview--central3c-caua.netlify.app",
+  ]);
+  if (development) {
+    allowed.add("http://localhost:3000");
+    allowed.add("http://localhost:3001");
+    allowed.add("http://localhost:3002");
+  }
+  return origin && allowed.has(origin) ? origin : canonical;
 }

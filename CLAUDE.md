@@ -8,7 +8,7 @@ Leia também `AGENTS.md`: este projeto usa **Next.js 16.4**, que tem APIs difere
 - **3C OS** é o "Jarvis" dele: uma memória compartilhada entre Claude e ChatGPT, mais um painel pessoal (agenda, tarefas, lembretes, notícias, perfil, arquivos) com uma assistente própria. Toda decisão de produto deve servir a esse fluxo: abrir o app, ouvir "Bom dia, Cauã. O que você quer hoje?" e pedir em linguagem natural.
 - **Agentes:** Chloe (IA do próprio 3C OS, feminina, cor `#a78bfa`, fonte `manual` por enquanto), Vega (Claude, via MCP, fonte `claude`, `#f0a875`) e Nox (ChatGPT, via GPT Actions e plugin do Supabase no modo Work, fonte `chatgpt`, `#7ee0b0`). Hierarquia: Cauã → 3C OS/Chloe → Vega → Nox → ferramentas.
 - **Visual:** preto, branco e roxo, com toque estelar discreto. Outras cores só para alertas. Mobile first: ele usa todo dia como PWA no iPhone 13. Teste em 390x844 (sem rolagem lateral, respeitando as áreas seguras) e em 1440x900.
-- **Produção:** https://central3c-caua.vercel.app (login só do Cauã). **Repositório público:** https://github.com/cauamor-dev/3COS.
+- **Produção:** https://central3c-caua.netlify.app (login só do Cauã). Host Vercel preservado para transição dos consumidores. **Repositório público:** https://github.com/cauamor-dev/3COS.
 
 ## Regras obrigatórias
 
@@ -31,6 +31,8 @@ Leia também `AGENTS.md`: este projeto usa **Next.js 16.4**, que tem APIs difere
 - **Modo demo:** `npm run dev:demo` (porta 3001) roda com dados fictícios em memória, sem login. Use para testar e tirar prints.
 
 ## Como publicar
+
+Desde 18/10/2026 a Central usa Netlify, com projeto separado do Painel Axial. Seguir `docs/operations/release-recovery.md`: preview Linux com adaptador Next explícito, validação real e promoção do deploy validado. Preservar compatibilidade das conexões antigas; não duplicar cron. As instruções Vercel abaixo são do host legado.
 
 - **Banco:** migrações novas em `supabase/migrations/`, aplicadas com `npx supabase db push --linked` (exige `SUPABASE_ACCESS_TOKEN` e a senha do banco no ambiente).
 - **App (Vercel, plano grátis):** o projeto está ligado ao GitHub, então **um push para `main` publica sozinho** (região São Paulo). Numa sessão do Claude Code no navegador, entregue no `main` (ou num PR que o Cauã aprova) e confira depois se o deploy ficou "Ready".

@@ -33,7 +33,7 @@ export function EntryCard({ entry, showArea = true, className, children }: {
         <TimeAgo date={entry.created_at} className="ml-auto font-mono text-[11px] text-muted-foreground" />
       </div>
       <h3 className={cn("mt-2.5 font-medium leading-snug", entry.done_at && "text-muted-foreground line-through")}>
-        {entry.title}
+        <Link href={`/registros/${entry.id}`} className="hover:text-lilac focus-visible:underline">{entry.title}</Link>
       </h3>
       <ScheduleLine entry={entry} />
       {excerpt && <p className="mt-1 line-clamp-3 text-sm text-muted-foreground">{excerpt}</p>}

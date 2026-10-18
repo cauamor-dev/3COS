@@ -1,0 +1,5 @@
+{
+ "name":"axial-marketing-local","private":true,"version":"1.0.0",
+ "scripts":{"render":"remotion render src/index.tsx AxialDemo out/demo.mp4 --concurrency=2 --crf=26","cover":"remotion still src/index.tsx AxialDemo out/capa.png --frame=30"},
+ "dependencies":{"@remotion/cli":"4.0.536","remotion":"4.0.536","react":"19.3.0","react-dom":"19.3.0"}
+}

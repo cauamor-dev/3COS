@@ -36,12 +36,13 @@ export function dayLabel(key: string, todayKey: string) {
 export function toLocalInput(iso: string | null | undefined) {
   if (!iso) return "";
   const date = new Date(iso);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  const parts=new Intl.DateTimeFormat("en-CA",{timeZone:TIME_ZONE,year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(date);
+  const value=(type:string)=>parts.find(p=>p.type===type)?.value??"";
+  return `${value("year")}-${value("month")}-${value("day")}T${value("hour")}:${value("minute")}`;
 }
 
 export function fromLocalInput(value: string) {
-  return value ? new Date(value).toISOString() : undefined;
+  return value ? new Date(`${value}-03:00`).toISOString() : undefined;
 }
 
 export const REMINDER_OPTIONS = [

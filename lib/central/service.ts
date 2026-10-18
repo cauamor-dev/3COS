@@ -1,4 +1,5 @@
 import { CentralError, notFound } from "./errors";
+import { actorSource, HUMAN_ACTOR, type ActorContext } from "./access";
 import {
   agendaInput,
   briefingInput,
@@ -52,6 +53,7 @@ import { rankNews, type NewsSettings, type RankableNews } from "@/lib/news/ranki
 /** Copies images the AIs link to into our own storage (optional, server only). */
 export interface FileStore {
   persistImage(url: string): Promise<string>;
+  linkToEntry?(entry:Entry,actor:ActorContext):Promise<void>;
 }
 
 /** What the service needs from the news store (kept narrow so tests can fake it). */
@@ -78,6 +80,9 @@ function entryView(entry: Entry, max: number) {
   const content = truncate(entry.content_md, max);
   return {
     id: entry.id,
+    revision: entry.revision ?? 1,
+    ai_access: entry.ai_access ?? "shared",
+    origem: { chat_id: entry.origin_chat_id ?? null, titulo: entry.origin_chat_title ?? "origem não informada", url: entry.origin_chat_url ?? null, agente: entry.agent_id ?? null },
     area: entry.area.slug,
     tipo: entry.type,
     titulo: entry.title,
@@ -198,11 +203,15 @@ function reminderText(entry: Entry): Notice {
 const truncationHint = "Conteúdos marcados com truncado=true estão cortados; use ler_registro com o id para ler completo.";
 
 export class CentralService {
+  private readonly repo: CentralRepository;
   constructor(
-    private readonly repo: CentralRepository,
+    repo: CentralRepository,
     private readonly newsSource?: NewsSource,
     private readonly files?: FileStore,
-  ) {}
+    readonly actor: ActorContext = HUMAN_ACTOR,
+  ) { this.repo = repo.forActor(actor); }
+
+  asActor(actor: ActorContext) { return new CentralService(this.repo, this.newsSource, this.files, actor); }
 
   /** Collected news ranked by the user's interests, for Vega and Nox. */
   async news(raw: NewsInput = {}) {
@@ -316,7 +325,10 @@ export class CentralService {
   }
 
   async saveEntry(raw: SaveEntryInput, source: Source) {
+    source = actorSource(this.actor, source);
     const input = saveEntryInput.parse(raw);
+    if (this.actor.kind !== "human" && input.ai_access && input.ai_access !== "shared") throw new CentralError("forbidden", "A visibilidade é definida pelo proprietário.");
+    if(input.external_id){const existing=await this.repo.findEntryByExternalId(input.external_id,this.actor.id);if(existing){if(existing.title!==input.titulo||existing.content_md!==input.conteudo)throw new CentralError("conflict","Identificador externo já usado com outro conteúdo. Edite o registro com sua revisão.");return {registro:entryView(existing,LIMITS.entryInList),area_criada:false,mensagem:"Registro externo já recebido; nenhuma duplicação."};}}
     const { area, created } = await this.ensureArea(input.area_slug, source, {
       name: input.area_nome,
       kind: input.area_tipo,
@@ -333,9 +345,19 @@ export class CentralService {
       tags: normalizeTags(input.tags),
       source,
       pinned: input.fixado,
+      ai_access: input.ai_access ?? "shared",
+      ...(this.actor.userId && { owner_id: this.actor.userId }),
+      ...(this.actor.agentId && { agent_id: this.actor.agentId }),
+      original_text: input.original_text ?? input.conteudo,
+      origin_chat_id: input.origin_chat_id,
+      origin_chat_title: input.origin_chat_title,
+      origin_chat_url: input.origin_chat_url,
+      external_id: input.external_id,
+      origin_client_id:this.actor.id,
       ...scheduleFromInput(input),
     });
     await this.repo.updateArea(area.id, { updated_by: source, touch: true });
+    await this.files?.linkToEntry?.(entry,this.actor);
     return {
       registro: entryView(entry, LIMITS.entryInList),
       area_criada: created,
@@ -346,6 +368,7 @@ export class CentralService {
   }
 
   async updateSummary(raw: UpdateSummaryInput, source: Source) {
+    source = actorSource(this.actor, source);
     const input = updateSummaryInput.parse(raw);
     const { area, created } = await this.ensureArea(input.area_slug, source, {
       name: input.area_nome,
@@ -375,11 +398,18 @@ export class CentralService {
   }
 
   async editEntry(raw: EditEntryInput, source: Source) {
+    source = actorSource(this.actor, source);
     const input = editEntryInput.parse(raw);
+    if(this.actor.kind==="integration"&&input.revision===undefined)throw new CentralError("invalid","Leia o registro e informe revision antes de editar.");
     const entry = await this.repo.findEntryById(input.id);
     if (!entry) throw notFound("Registro");
 
     const patch: EntryPatch = { updated_by: source };
+    if (input.ai_access !== undefined) {
+      if (this.actor.kind !== "human") throw new CentralError("forbidden", "A visibilidade é definida pelo proprietário.");
+      patch.ai_access = input.ai_access;
+    }
+    if (input.revision !== undefined && input.revision !== entry.revision) throw new CentralError("conflict", "O registro mudou. Reabra a versão atual antes de salvar.");
     if (input.titulo !== undefined) patch.title = input.titulo;
     if (input.conteudo !== undefined) patch.content_md = input.conteudo;
     if (input.tipo !== undefined) patch.type = input.tipo;
@@ -389,20 +419,13 @@ export class CentralService {
     if (input.area_slug !== undefined) patch.area_id = (await this.requireArea(input.area_slug)).id;
     if (input.concluida !== undefined) patch.done_at = input.concluida ? new Date().toISOString() : null;
     Object.assign(patch, scheduleFromInput(input));
+    for(const field of input.limpar??[]){const key={fim:"ends_at",prazo:"due_at",lembrar_em:"remind_at",recorrencia:"recurrence",local:"location"}[field] as keyof ScheduleFields;Object.assign(patch,{[key]:null});}
+    if((patch.type??entry.type)==="evento"&&!(patch.starts_at??entry.starts_at))throw new CentralError("invalid","Evento exige início.");
+    const effectiveStart=patch.starts_at??entry.starts_at;const effectiveEnd=patch.ends_at===undefined?entry.ends_at:patch.ends_at;
+    if(effectiveStart&&effectiveEnd&&effectiveEnd<effectiveStart)throw new CentralError("invalid","O fim não pode ocorrer antes do início.");
 
-    const contentChanged = patch.content_md !== undefined && patch.content_md !== entry.content_md;
-    const titleChanged = patch.title !== undefined && patch.title !== entry.title;
-    if (contentChanged || titleChanged) {
-      await this.repo.insertVersion({
-        target_table: "entries",
-        target_id: entry.id,
-        previous_title: entry.title,
-        previous_content: entry.content_md,
-        source,
-      });
-    }
-
-    const updated = await this.repo.updateEntry(entry.id, patch);
+    const updated = await this.repo.updateEntry(entry.id, patch, input.revision ?? entry.revision);
+    await this.files?.linkToEntry?.(updated,this.actor);
     return { registro: entryView(updated, LIMITS.entryInList), mensagem: "Registro atualizado." };
   }
 
@@ -624,18 +647,15 @@ export class CentralService {
 
     const entry = await this.repo.findEntryById(version.target_id);
     if (!entry) throw notFound("Registro");
-    await this.repo.insertVersion({
-      target_table: "entries",
-      target_id: entry.id,
-      previous_title: entry.title,
-      previous_content: entry.content_md,
-      source,
-    });
-    await this.repo.updateEntry(entry.id, {
+    const restored:EntryPatch={};
+    if(version.previous_snapshot){for(const key of ["area_id","type","title","content_md","tags","pinned","archived","starts_at","ends_at","all_day","location","recurrence","due_at","done_at","remind_at","reminded_at","links","image_url","priority","ai_access"] as const){if(key in version.previous_snapshot)Object.assign(restored,{[key]:version.previous_snapshot[key]});}}
+    const restoredEntry=await this.repo.updateEntry(entry.id, {
+      ...restored,
       content_md: version.previous_content,
       ...(version.previous_title && { title: version.previous_title }),
       updated_by: source,
-    });
+    }, entry.revision);
+    await this.files?.linkToEntry?.(restoredEntry,this.actor);
     return { target_table: "entries" as const, slug: entry.area.slug, id: entry.id };
   }
 

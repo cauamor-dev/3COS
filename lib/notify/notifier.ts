@@ -12,6 +12,7 @@ export interface Notification {
   html?: string;
   entryId?: string;
   kind?: string;
+  ownerId?: string;
 }
 
 export interface ChannelResult {
@@ -20,51 +21,102 @@ export interface ChannelResult {
   detail?: string;
 }
 
-export type InlineKeyboard = { text: string; callback_data?: string; url?: string }[][];
+export type InlineKeyboard = {
+  text: string;
+  callback_data?: string;
+  url?: string;
+}[][];
 
 export function enabledChannels() {
   return {
-    push: !!(process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY),
+    push: !!(
+      process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY && process.env.VAPID_PRIVATE_KEY
+    ),
     email: !!process.env.RESEND_API_KEY,
-    telegram: !!(process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID),
+    telegram: !!(
+      process.env.TELEGRAM_BOT_TOKEN && process.env.TELEGRAM_CHAT_ID
+    ),
   };
 }
 
 export function escapeHtml(value: string) {
-  return value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
 }
 
-async function sendPush(notification: Notification): Promise<ChannelResult> {
+export async function sendOwnerPush(
+  notification: Notification,
+  ownerId: string,
+): Promise<ChannelResult> {
+  if (!enabledChannels().push)
+    return { channel: "push", ok: false, detail: "push não configurado" };
   webpush.setVapidDetails(
     process.env.VAPID_SUBJECT ?? `mailto:${serverEnv.allowedEmail}`,
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
     process.env.VAPID_PRIVATE_KEY!,
   );
   const db = createAdminClient();
-  const { data, error } = await db.from("push_subscriptions").select("id, endpoint, p256dh, auth");
+  const { data, error } = await db
+    .from("push_subscriptions")
+    .select("id, endpoint, p256dh, auth")
+    .eq("owner_id", ownerId);
   if (error) return { channel: "push", ok: false, detail: error.message };
-  if (!data?.length) return { channel: "push", ok: false, detail: "nenhum dispositivo" };
+  if (!data?.length)
+    return { channel: "push", ok: false, detail: "nenhum dispositivo" };
 
-  const payload = JSON.stringify({ title: notification.title, body: notification.body, url: notification.path ?? "/" });
+  const payload = JSON.stringify({
+    title: notification.title,
+    body: notification.body,
+    url: notification.path ?? "/",
+  });
   const results = await Promise.allSettled(
-    data.map((sub) => webpush.sendNotification({ endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } }, payload)),
+    data.map((sub) =>
+      webpush.sendNotification(
+        {
+          endpoint: sub.endpoint,
+          keys: { p256dh: sub.p256dh, auth: sub.auth },
+        },
+        payload,
+      ),
+    ),
   );
 
   // Subscriptions the browser revoked answer 404/410; drop them so they stop failing.
   const gone = data.filter((_, i) => {
     const result = results[i];
-    return result.status === "rejected" && [404, 410].includes((result.reason as { statusCode?: number }).statusCode ?? 0);
+    return (
+      result.status === "rejected" &&
+      [404, 410].includes(
+        (result.reason as { statusCode?: number }).statusCode ?? 0,
+      )
+    );
   });
-  if (gone.length) await db.from("push_subscriptions").delete().in("id", gone.map((sub) => sub.id));
+  if (gone.length)
+    await db
+      .from("push_subscriptions")
+      .delete()
+      .in(
+        "id",
+        gone.map((sub) => sub.id),
+      );
 
   const delivered = results.filter((r) => r.status === "fulfilled").length;
-  return { channel: "push", ok: delivered > 0, detail: `${delivered}/${data.length} dispositivos` };
+  return {
+    channel: "push",
+    ok: delivered > 0,
+    detail: `${delivered}/${data.length} dispositivos`,
+  };
 }
 
 async function sendEmail(notification: Notification): Promise<ChannelResult> {
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}`, "Content-Type": "application/json" },
+    headers: {
+      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+      "Content-Type": "application/json",
+    },
     body: JSON.stringify({
       from: process.env.EMAIL_FROM ?? "3C OS <onboarding@resend.dev>",
       to: [process.env.NOTIFY_EMAIL ?? serverEnv.allowedEmail],
@@ -73,15 +125,25 @@ async function sendEmail(notification: Notification): Promise<ChannelResult> {
       ...(notification.html && { html: notification.html }),
     }),
   });
-  return { channel: "email", ok: response.ok, detail: response.ok ? undefined : await response.text() };
+  return {
+    channel: "email",
+    ok: response.ok,
+    detail: response.ok ? undefined : await response.text(),
+  };
 }
 
-export async function telegramApi(method: string, body: Record<string, unknown>) {
-  const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/${method}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
+export async function telegramApi(
+  method: string,
+  body: Record<string, unknown>,
+) {
+  const response = await fetch(
+    `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/${method}`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    },
+  );
   return response;
 }
 
@@ -94,39 +156,64 @@ export async function sendTelegram(
     text,
     parse_mode: "HTML",
     disable_web_page_preview: true,
-    ...(options.keyboard && { reply_markup: { inline_keyboard: options.keyboard } }),
+    ...(options.keyboard && {
+      reply_markup: { inline_keyboard: options.keyboard },
+    }),
   });
-  return { channel: "telegram", ok: response.ok, detail: response.ok ? undefined : await response.text() };
+  return {
+    channel: "telegram",
+    ok: response.ok,
+    detail: response.ok ? undefined : await response.text(),
+  };
 }
 
-function reminderKeyboard(notification: Notification): InlineKeyboard | undefined {
+function reminderKeyboard(
+  notification: Notification,
+): InlineKeyboard | undefined {
   if (!notification.entryId) return undefined;
   return [
     [
-      ...(notification.kind === "tarefa" ? [{ text: "✅ Concluir", callback_data: `done:${notification.entryId}` }] : []),
+      ...(notification.kind === "tarefa"
+        ? [
+            {
+              text: "✅ Concluir",
+              callback_data: `done:${notification.entryId}`,
+            },
+          ]
+        : []),
       { text: "⏰ Adiar 1h", callback_data: `snooze:${notification.entryId}` },
     ],
   ];
 }
 
-export async function notify(notification: Notification, only?: ChannelResult["channel"][]): Promise<ChannelResult[]> {
+export async function notify(
+  notification: Notification,
+  only?: ChannelResult["channel"][],
+): Promise<ChannelResult[]> {
   const channels = enabledChannels();
-  const wants = (channel: ChannelResult["channel"]) => channels[channel] && (!only || only.includes(channel));
+  const wants = (channel: ChannelResult["channel"]) =>
+    channels[channel] && (!only || only.includes(channel));
   const tasks: Promise<ChannelResult>[] = [];
 
-  if (wants("push")) tasks.push(sendPush(notification));
+  if (wants("push") && notification.ownerId)
+    tasks.push(sendOwnerPush(notification, notification.ownerId));
   if (wants("email")) tasks.push(sendEmail(notification));
   if (wants("telegram")) {
     const link = `${serverEnv.appUrl}${notification.path ?? "/"}`;
     tasks.push(
-      sendTelegram(`<b>${escapeHtml(notification.title)}</b>\n${escapeHtml(notification.body)}\n\n<a href="${link}">Abrir na Central</a>`, {
-        keyboard: reminderKeyboard(notification),
-      }),
+      sendTelegram(
+        `<b>${escapeHtml(notification.title)}</b>\n${escapeHtml(notification.body)}\n\n<a href="${link}">Abrir na Central</a>`,
+        {
+          keyboard: reminderKeyboard(notification),
+        },
+      ),
     );
   }
 
   const settled = await Promise.allSettled(tasks);
   return settled.map((result) =>
-    result.status === "fulfilled" ? result.value : { channel: "push" as const, ok: false, detail: String(result.reason) },
+    result.status === "fulfilled"
+      ? result.value
+      : { channel: "push" as const, ok: false, detail: String(result.reason) },
   );
 }

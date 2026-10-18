@@ -131,6 +131,7 @@ function EditEntryDialog({ entry, onClose }: { entry: Entry; onClose(): void }) 
     startTransition(async () => {
       const result = await editEntryAction({
         id: entry.id,
+        revision: entry.revision,
         titulo: title,
         conteudo: content,
         tipo: type,

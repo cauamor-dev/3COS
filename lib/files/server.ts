@@ -1,71 +1,45 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { FILES_BUCKET, MAX_FILE_BYTES, SIGNED_URL_SECONDS, storagePath } from "./shared";
-
-const IMAGE_TYPES = /^image\/(jpeg|png|webp|gif|heic|heif)$/;
+import { FILES_BUCKET, MAX_FILE_BYTES, storagePath } from "./shared";
+import { serverEnv } from "@/lib/env";
+import type { Entry } from "@/lib/central/types";
+import { canEntry,type ActorContext } from "@/lib/central/access";
 
 /** True for links that already point to our own private bucket. */
 export function isStoredUrl(url: string) {
   return url.includes(`/storage/v1/object/sign/${FILES_BUCKET}/`);
 }
 
-/** Saves bytes in the private bucket and returns a long-lived signed link. */
+/** Legacy byte capture; new browser/agent uploads use artifact reservations. */
 export async function storeBytes(bytes: ArrayBuffer, contentType: string) {
   if (bytes.byteLength > MAX_FILE_BYTES) throw new Error("Arquivo maior que 10 MB.");
   const db = createAdminClient();
   const path = storagePath(contentType);
   const { error } = await db.storage.from(FILES_BUCKET).upload(path, bytes, { contentType });
   if (error) throw new Error(error.message);
-  const { data, error: signError } = await db.storage.from(FILES_BUCKET).createSignedUrl(path, SIGNED_URL_SECONDS);
-  if (signError || !data) throw new Error(signError?.message ?? "Não foi possível gerar o link do arquivo.");
-  return data.signedUrl;
+  const owner=await db.from("entries").select("owner_id").not("owner_id","is",null).limit(1).maybeSingle();
+  const artifact=await db.from("artifacts").insert({owner_id:owner.data?.owner_id??null,name:"Anexo recebido",mime:contentType,size_bytes:bytes.byteLength,object_path:path,status:"ready",visibility:"private"}).select("id").single();
+  if(artifact.error||!artifact.data)throw new Error("Arquivo recebido; registro da biblioteca pendente.");
+  return `${serverEnv.appUrl}/api/files/${artifact.data.id}`;
 }
 
-// The server fetches a URL chosen by an AI, so it must never reach private networks.
-function isPublicHttpUrl(raw: string) {
-  try {
-    const url = new URL(raw);
-    if (url.protocol !== "https:" && url.protocol !== "http:") return false;
-    const host = url.hostname.toLowerCase();
-    return !(
-      host === "localhost" ||
-      host.endsWith(".localhost") ||
-      host.endsWith(".internal") ||
-      /^(127|10|0)\./.test(host) ||
-      /^192\.168\./.test(host) ||
-      /^169\.254\./.test(host) ||
-      /^172\.(1[6-9]|2\d|3[01])\./.test(host) ||
-      host.startsWith("[")
-    );
-  } catch {
-    return false;
-  }
+/** Only bind objects already owned by the authenticated user or a granted existing entry. */
+export async function linkEntryFiles(entry:Entry,actor:ActorContext) {
+ if(!canEntry(actor,entry))return;
+ const urls=[entry.image_url,...(entry.links??[]).flatMap(l=>[l.url,l.imagem])].filter((s):s is string=>!!s);
+ const db=createAdminClient();
+ for(const raw of urls){let url:URL;try{url=new URL(raw);}catch{continue;}
+  if(url.origin!==new URL(serverEnv.appUrl).origin)continue;const match=url.pathname.match(/^\/api\/files\/([0-9a-f-]{36})$/i);if(!match)continue;
+  const result=await db.from("artifacts").select("id,owner_id,entry_id").eq("id",match[1]).maybeSingle();const f=result.data;
+  if(!f||!actor.userId||f.owner_id!==actor.userId|| (f.entry_id&&f.entry_id!==entry.id))continue;
+  await db.from("artifacts").update({entry_id:entry.id,area_id:entry.area_id,visibility:entry.ai_access==="private"?"private":entry.ai_access==="restricted"?"restricted":"shared"}).eq("id",f.id);
+ }
+ // Privacy changes also apply to artifacts already attached to this entry.
+ await db.from("artifacts").update({visibility:entry.ai_access==="private"?"private":entry.ai_access==="restricted"?"restricted":"shared",area_id:entry.area_id}).eq("entry_id",entry.id);
 }
 
-// Follows redirects by hand so every hop is checked, not only the first address.
-async function fetchPublic(url: string, hops = 0): Promise<Response> {
-  const response = await fetch(url, {
-    redirect: "manual",
-    signal: AbortSignal.timeout(10_000),
-    headers: { "User-Agent": "Mozilla/5.0 (compatible; 3C-OS/1.0)" },
-  });
-  const location = response.headers.get("location");
-  if (response.status >= 300 && response.status < 400 && location) {
-    const next = new URL(location, url).toString();
-    await response.body?.cancel();
-    if (hops >= 3 || !isPublicHttpUrl(next)) throw new Error("Redirecionamento não permitido.");
-    return fetchPublic(next, hops + 1);
-  }
-  return response;
-}
-
-/** Copies an image an AI linked to into our bucket, so it survives the original site removing it. */
+/** Remote references stay remote. Server fetching of user URLs is intentionally disabled;
+ * authenticated direct upload avoids DNS rebinding, private-IP redirects and metadata requests. */
 export async function persistRemoteImage(url: string) {
-  if (isStoredUrl(url) || !isPublicHttpUrl(url)) return url;
-  const response = await fetchPublic(url);
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  const type = response.headers.get("content-type")?.split(";")[0].trim() ?? "";
-  if (!IMAGE_TYPES.test(type)) throw new Error("O link não é uma imagem.");
-  if (Number(response.headers.get("content-length") ?? 0) > MAX_FILE_BYTES) throw new Error("Imagem maior que 10 MB.");
-  return storeBytes(await response.arrayBuffer(), type);
+  return url;
 }

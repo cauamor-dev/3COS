@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { memory, memoryCentral, resetMemory, routeContext, stubEnv, TEST_ENV } from "./helpers";
 
 vi.mock("@/lib/central/server", () => ({ adminCentral: memoryCentral }));
+vi.mock("@/lib/integrations/quota",()=>({checkClientQuota:async()=>true}));
 
 const { POST } = await import("@/app/api/mcp/[secret]/route");
 
@@ -82,9 +83,9 @@ describe("ferramentas", () => {
     expect(memory.repo.entries[0].source).toBe("claude");
   });
 
-  it("usa a fonte da query string quando informada", async () => {
+  it("ignora fonte forjada em query string e mantém identidade da credencial", async () => {
     await rpc("tools/call", { name: "salvar_registro", arguments: { titulo: "Via Cursor" } }, TEST_ENV.MCP_SECRET, "?fonte=cursor");
-    expect(memory.repo.entries.at(-1)?.source).toBe("cursor");
+    expect(memory.repo.entries.at(-1)?.source).toBe("claude");
   });
 
   it("devolve erro legível para área inexistente", async () => {
@@ -95,7 +96,7 @@ describe("ferramentas", () => {
 });
 
 describe("fonte pelo cliente", () => {
-  it("identifica o ChatGPT pelo user-agent", async () => {
+  it("não aceita user-agent como prova de identidade", async () => {
     const request = new Request(`https://central.exemplo.com/api/mcp/${TEST_ENV.MCP_SECRET}`, {
       method: "POST",
       headers: {
@@ -112,6 +113,6 @@ describe("fonte pelo cliente", () => {
       }),
     });
     await (await POST(request, routeContext({ secret: TEST_ENV.MCP_SECRET }))).text();
-    expect(memory.repo.entries.at(-1)?.source).toBe("chatgpt");
+    expect(memory.repo.entries.at(-1)?.source).toBe("claude");
   });
 });

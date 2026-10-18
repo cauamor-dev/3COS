@@ -39,6 +39,8 @@ function greeting(now: number) {
 /** Chloe's command bar: greets by the hour and runs short requests right away. */
 export function ChloeCommand({ now }: { now: number }) {
   const [text, setText] = useState("");
+  const [mode,setMode]=useState<"anotar"|"perguntar"|"equipe">("anotar");
+  const [conversationId,setConversationId]=useState<string|undefined>();
   const [answer, setAnswer] = useState<ChloeReply | null>(null);
   const [listening, setListening] = useState(false);
   const [pending, startTransition] = useTransition();
@@ -47,17 +49,19 @@ export function ChloeCommand({ now }: { now: number }) {
   const canListen = useSyncExternalStore(noSubscribe, () => !!speechApi(), () => false);
   const attachments = useAttachments();
   const hasFiles = attachments.items.length > 0;
+  const explicitCommand=mode==="anotar"&&/^(me lembr[ae]|lembrete\s*:|(?:marca|marcar|agenda|agendar)\s|tarefa\s*:)/i.test(text.trim());
 
   function send(value = text) {
     const request = value.trim();
     if ((!request && !hasFiles) || pending || attachments.busy) return;
     startTransition(async () => {
-      const result = await chloeCommandAction(request, hasFiles ? attachmentFields(attachments.items) : undefined);
+      const result = await chloeCommandAction(request, hasFiles ? attachmentFields(attachments.items) : undefined,{mode,conversationId});
       if (!result.ok) {
         toast.error(result.error);
         return;
       }
       setAnswer(result.data);
+      if(result.data.conversationId)setConversationId(result.data.conversationId);
       setText("");
       attachments.clear();
     });
@@ -103,6 +107,8 @@ export function ChloeCommand({ now }: { now: number }) {
         {greeting(now)}, {OWNER}.
       </h1>
       <p className="text-sm text-muted-foreground md:text-base">O que você quer hoje?</p>
+      {explicitCommand&&<p className="mt-2 text-xs text-lilac">Comando explícito detectado: criar lembrete, tarefa ou evento. Use “anota:” no início se quiser apenas guardar o texto.</p>}
+      <div className="mt-3 flex flex-wrap gap-2">{([['anotar','Anotar'],['perguntar','Perguntar'],['equipe','Pedir à equipe']] as const).map(([value,label])=><button key={value} type="button" aria-pressed={mode===value} onClick={()=>setMode(value)} className={cn("rounded-lg border px-3 py-1.5 text-xs",mode===value&&"border-primary bg-primary/20 text-lilac")}>{label}</button>)}</div>
 
       <form
         className="mt-3 flex items-center gap-2"
@@ -119,7 +125,7 @@ export function ChloeCommand({ now }: { now: number }) {
             placeholder={listening ? "Ouvindo…" : hasFiles ? "Legenda (opcional)" : "Peça algo: lembrete, evento, nota, agenda…"}
             aria-label="Pedido para a Chloe"
             enterKeyHint="send"
-            maxLength={500}
+            maxLength={50000}
             className="h-12 w-full min-w-0 rounded-xl border border-white/10 bg-white/[0.04] pr-12 pl-4 text-base outline-none transition-colors duration-150 placeholder:text-muted-foreground/70 focus:border-primary/60"
           />
           <AttachmentClip
@@ -162,11 +168,13 @@ export function ChloeCommand({ now }: { now: number }) {
       {answer ? (
         <div className="mt-3 rounded-xl bg-primary/10 p-3 text-sm animate-in fade-in-0 slide-in-from-top-1 duration-200">
           <p>{answer.reply}</p>
+          {answer.status&&<p className="mt-2 text-xs text-muted-foreground">{answer.status}</p>}
+          {!!answer.duplicates?.length&&<div className="mt-2"><p className="text-xs">Possíveis duplicatas: sua anotação foi mantida. Abra uma fonte para complementar com histórico.</p>{answer.duplicates.map(d=><Link key={d.id} href={`/registros/${d.id}`} className="mt-1 block text-xs text-lilac">{d.title}</Link>)}</div>}
           {answer.items && answer.items.length > 0 && (
             <ul className="mt-2 space-y-1 font-mono text-[13px] text-muted-foreground">
               {answer.items.slice(0, 8).map((item) => (
                 <li key={item} className="truncate">
-                  {item}
+                  {item.includes("/registros/")?<Link className="text-lilac" href={item.slice(item.indexOf("/registros/"))}>{item.slice(0,item.indexOf(": /registros/"))||"Abrir fonte"}</Link>:item}
                 </li>
               ))}
             </ul>

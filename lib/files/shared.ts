@@ -1,10 +1,12 @@
 /** Private Supabase Storage bucket for images and files (see the storage_arquivos migration). */
 export const FILES_BUCKET = "arquivos";
 export const MAX_FILE_BYTES = 10 * 1024 * 1024;
-/** Links are long-lived capabilities: unguessable, and revoked by deleting the file. */
-export const SIGNED_URL_SECONDS = 10 * 365 * 24 * 3600;
+/** Download capabilities expire in ten minutes; the stable endpoint rechecks authorization. */
+export const SIGNED_URL_SECONDS = 10 * 60;
+export const MAX_VIDEO_BYTES = 50 * 1024 * 1024;
 
 const EXTENSIONS: Record<string, string> = {
+  "video/mp4": "mp4",
   "image/jpeg": "jpg",
   "image/png": "png",
   "image/webp": "webp",

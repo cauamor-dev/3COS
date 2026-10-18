@@ -4,7 +4,11 @@ import { NextResponse, type NextRequest } from "next/server";
 const PUBLIC_PATHS = ["/login", "/auth", "/privacidade"];
 
 export async function proxy(request: NextRequest) {
-  if (process.env.NODE_ENV === "development" && process.env.CENTRAL_DEMO === "1") return NextResponse.next();
+  if (
+    process.env.NODE_ENV === "development" &&
+    process.env.CENTRAL_DEMO === "1"
+  )
+    return NextResponse.next();
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -16,26 +20,38 @@ export async function proxy(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet, headers) {
-          for (const { name, value } of cookiesToSet) request.cookies.set(name, value);
+          for (const { name, value } of cookiesToSet)
+            request.cookies.set(name, value);
           response = NextResponse.next({ request });
-          for (const { name, value, options } of cookiesToSet) response.cookies.set(name, value, options);
-          for (const [key, value] of Object.entries(headers ?? {})) response.headers.set(key, value);
+          for (const { name, value, options } of cookiesToSet)
+            response.cookies.set(name, value, options);
+          for (const [key, value] of Object.entries(headers ?? {}))
+            response.headers.set(key, value);
         },
       },
     },
   );
 
   const { data } = await supabase.auth.getClaims();
-  const email = typeof data?.claims.email === "string" ? data.claims.email.toLowerCase() : null;
-  const allowed = !!email && email === process.env.ALLOWED_EMAIL?.trim().toLowerCase();
+  const email =
+    typeof data?.claims.email === "string"
+      ? data.claims.email.toLowerCase()
+      : null;
+  const allowed =
+    !!email && email === process.env.ALLOWED_EMAIL?.trim().toLowerCase();
 
   const { pathname, search } = request.nextUrl;
-  const isPublic = PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(`${path}/`));
+  const isPublic =
+    pathname === "/demos/agendamento.html" ||
+    PUBLIC_PATHS.some(
+      (path) => pathname === path || pathname.startsWith(`${path}/`),
+    );
 
   if (!allowed && !isPublic) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
-    url.search = pathname === "/" ? "" : `?next=${encodeURIComponent(pathname + search)}`;
+    url.search =
+      pathname === "/" ? "" : `?next=${encodeURIComponent(pathname + search)}`;
     return NextResponse.redirect(url);
   }
 

@@ -3,7 +3,7 @@ import { CentralError } from "./errors";
 
 export function describeError(error: unknown): { status: number; code: string; message: string } {
   if (error instanceof CentralError) {
-    const status = { not_found: 404, invalid: 400, conflict: 409 }[error.code];
+    const status = { not_found: 404, invalid: 400, conflict: 409, forbidden: 403, quota: 429 }[error.code];
     return { status, code: error.code, message: error.message };
   }
   if (error instanceof ZodError) {

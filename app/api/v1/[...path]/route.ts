@@ -1,20 +1,15 @@
 import { allowedMethods, matchOperation } from "@/lib/api/router";
 import { describeError } from "@/lib/central/format-error";
-import { SOURCES, type Source } from "@/lib/central/schemas";
 import { adminCentral } from "@/lib/central/server";
-import { serverEnv } from "@/lib/env";
-import { bearerToken, clientIp, safeEqual } from "@/lib/http/auth";
+import { clientIp } from "@/lib/http/auth";
+import { resolveClient } from "@/lib/integrations/auth";
+import { checkClientQuota } from "@/lib/integrations/quota";
 import { createRateLimiter } from "@/lib/http/rate-limit";
 
 const rateLimit = createRateLimiter({ limit: 60, windowMs: 60_000 });
 
 function errorResponse(status: number, code: string, message: string, headers?: HeadersInit) {
   return Response.json({ error: { code, message } }, { status, headers });
-}
-
-function sourceFrom(request: Request): Source {
-  const requested = request.headers.get("x-central-fonte");
-  return SOURCES.find((s) => s === requested && s !== "manual") ?? "chatgpt";
 }
 
 async function readInput(request: Request): Promise<Record<string, unknown>> {
@@ -27,7 +22,8 @@ async function readInput(request: Request): Promise<Record<string, unknown>> {
 }
 
 async function handler(request: Request, { params }: RouteContext<"/api/v1/[...path]">) {
-  if (!safeEqual(bearerToken(request), serverEnv.apiKey)) {
+  const actor = await resolveClient(request);
+  if (!actor) {
     return errorResponse(401, "unauthorized", "API key ausente ou inválida.", { "WWW-Authenticate": "Bearer" });
   }
 
@@ -39,6 +35,7 @@ async function handler(request: Request, { params }: RouteContext<"/api/v1/[...p
   }
 
   const { path } = await params;
+  if(!(await checkClientQuota(actor.id)))return errorResponse(429,"rate_limited","Limite persistente da conexão atingido. Aguarde a próxima janela.",{"Retry-After":"60"});
   const match = matchOperation(request.method, path);
   if (!match) {
     const allowed = allowedMethods(path);
@@ -55,7 +52,7 @@ async function handler(request: Request, { params }: RouteContext<"/api/v1/[...p
   }
 
   try {
-    const result = await match.operation.run(adminCentral(), input, sourceFrom(request));
+    const result = await match.operation.run(adminCentral().asActor(actor), input, actor.source);
     return Response.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     const { status, code, message } = describeError(error);
