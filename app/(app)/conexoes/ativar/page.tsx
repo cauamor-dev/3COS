@@ -121,8 +121,9 @@ async function Activation() {
             <li>
               Crie uma API key e salve no segredo de ambiente{" "}
               <strong>GROQ_API_KEY</strong> do projeto{" "}
-              <strong>central3c-caua</strong> na Netlify. Contexto All deploys,
-              com os escopos disponíveis no plano Free.
+              <strong>central3c-caua</strong> na Netlify. Marque “Contains
+              secret values”, mantenha os escopos permitidos e preencha somente
+              “Production”. Não é necessário upgrade.
             </li>
             <li>
               Após conferir que a chave é de uma conta Free, salve{" "}

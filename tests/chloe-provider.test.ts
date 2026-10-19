@@ -1,7 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const { rpc } = vi.hoisted(() => ({ rpc: vi.fn() }));
 vi.mock("@/lib/supabase/admin", () => ({ createAdminClient: () => ({ rpc }) }));
-import { chloeAvailable, chloeReadiness, providerChat } from "@/lib/chloe/llm";
+import {
+  chloeAvailable,
+  chloeReadiness,
+  providerChat,
+  evaluationChat,
+  evaluationKeyIdentity,
+} from "@/lib/chloe/llm";
 beforeEach(() => {
   vi.stubEnv("GROQ_API_KEY", "fixture-key");
   vi.stubEnv("CHLOE_PROVIDER", "groq");
@@ -13,12 +19,10 @@ beforeEach(() => {
     vi.stubEnv(k, "1");
   vi.stubEnv("GROQ_MODEL_FAST", "openai/gpt-oss-20b");
   vi.stubEnv("GROQ_MODEL_SMART", "openai/gpt-oss-20b");
-  rpc
-    .mockReset()
-    .mockImplementation(async (name: string) => ({
-      data: name === "reserve_usage" ? "reservation" : null,
-      error: null,
-    }));
+  rpc.mockReset().mockImplementation(async (name: string) => ({
+    data: name === "reserve_usage" ? "reservation" : null,
+    error: null,
+  }));
 });
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -30,6 +34,37 @@ const request = {
   tier: "rapido" as const,
 };
 describe("IA gratuita sem fallback pago", () => {
+  it("avalia sem ligar a IA no processo e invalida aprovação ao trocar chave ou modelo", async () => {
+    vi.stubEnv("CHLOE_AI_ENABLED", "0");
+    vi.stubEnv("CHLOE_EVALUATION_PASSED", "0");
+    vi.stubEnv("CHLOE_EVALUATION_BUILD", "fixture-code");
+    const fetch = vi
+      .fn()
+      .mockResolvedValue(
+        Response.json({
+          choices: [
+            {
+              message: { role: "assistant", content: "Teste" },
+              finish_reason: "stop",
+            },
+          ],
+        }),
+      );
+    vi.stubGlobal("fetch", fetch);
+    await evaluationChat("openai/gpt-oss-20b")(request);
+    expect(chloeAvailable()).toBe(false);
+    vi.stubEnv("CHLOE_AI_ENABLED", "1");
+    vi.stubEnv("CHLOE_EVALUATION_PASSED", "1");
+    vi.stubEnv(
+      "CHLOE_EVALUATION_IDENTITY",
+      evaluationKeyIdentity("openai/gpt-oss-20b"),
+    );
+    expect(chloeAvailable()).toBe(true);
+    vi.stubEnv("GROQ_API_KEY", "different-fixture");
+    expect(chloeReadiness().reason).toBe("evaluation_pending");
+    vi.stubEnv("CHLOE_FREE_TIER_CONFIRMED", "0");
+    expect(() => evaluationChat("openai/gpt-oss-20b")).toThrow();
+  });
   it("não faz inferência sem confirmação de gratuidade e avaliação", async () => {
     const fetch = vi.fn();
     vi.stubGlobal("fetch", fetch);
@@ -53,14 +88,12 @@ describe("IA gratuita sem fallback pago", () => {
     expect(chloeAvailable()).toBe(false);
   });
   it("429 encerra uma tentativa, contabiliza uma vez e oculta o corpo do erro", async () => {
-    const fetch = vi
-      .fn()
-      .mockResolvedValue(
-        new Response("fixture-secret-do-not-echo", {
-          status: 429,
-          headers: { "retry-after": "10" },
-        }),
-      );
+    const fetch = vi.fn().mockResolvedValue(
+      new Response("fixture-secret-do-not-echo", {
+        status: 429,
+        headers: { "retry-after": "10" },
+      }),
+    );
     vi.stubGlobal("fetch", fetch);
     await expect(providerChat(request)).rejects.toMatchObject({
       code: "quota",
@@ -73,19 +106,17 @@ describe("IA gratuita sem fallback pago", () => {
     expect(rpc.mock.calls.at(-1)?.[1]).toMatchObject({ p_failed: true });
   });
   it("reserva antes da chamada e liquida consumo real uma vez", async () => {
-    const fetch = vi
-      .fn()
-      .mockResolvedValue(
-        Response.json({
-          choices: [
-            {
-              message: { role: "assistant", content: "Olá" },
-              finish_reason: "stop",
-            },
-          ],
-          usage: { total_tokens: 121 },
-        }),
-      );
+    const fetch = vi.fn().mockResolvedValue(
+      Response.json({
+        choices: [
+          {
+            message: { role: "assistant", content: "Olá" },
+            finish_reason: "stop",
+          },
+        ],
+        usage: { total_tokens: 121 },
+      }),
+    );
     vi.stubGlobal("fetch", fetch);
     expect((await providerChat(request)).content).toBe("Olá");
     expect(rpc.mock.calls.at(-1)?.[1]).toEqual({

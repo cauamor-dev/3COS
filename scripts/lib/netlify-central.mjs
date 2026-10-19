@@ -43,7 +43,7 @@ export async function centralHost() {
   };
   async function set(key, value) {
     if (
-      !/^(CHLOE_(AI_ENABLED|FREE_TIER_CONFIRMED|EVALUATION_PASSED|PROVIDER|DAILY_CALLS|DAILY_TOKENS)|GROQ_MODEL_(FAST|SMART))$/.test(
+      !/^(CHLOE_(AI_ENABLED|FREE_TIER_CONFIRMED|EVALUATION_PASSED|EVALUATION_IDENTITY|PROVIDER|DAILY_CALLS|DAILY_TOKENS)|GROQ_MODEL_(FAST|SMART))$/.test(
         key,
       )
     )
@@ -68,5 +68,14 @@ export async function centralHost() {
       previous ? item : [item],
     );
   }
-  return { get, set };
+  const metadata = (key) => {
+    const item = vars.find((v) => v.key === key);
+    return {
+      present: !!item,
+      secret: item?.is_secret === true,
+      contexts: (item?.values ?? []).map((v) => v.context),
+      scopes: item?.scopes ?? [],
+    };
+  };
+  return { get, set, metadata };
 }

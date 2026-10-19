@@ -1,4 +1,5 @@
 import "server-only";
+import { createHash } from "node:crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 export interface ChatMessage {
@@ -102,13 +103,20 @@ export function chloeReadiness() {
       : e.CHLOE_PROVIDER === "cloudflare"
         ? !!e.CLOUDFLARE_API_TOKEN
         : !!e.GROQ_API_KEY;
+  const evaluated =
+    e.CHLOE_EVALUATION_PASSED === "1" &&
+    (!e.CHLOE_EVALUATION_IDENTITY ||
+      (provider?.name === "groq" &&
+        Object.values(provider.models).every(
+          (m) => evaluationKeyIdentity(m) === e.CHLOE_EVALUATION_IDENTITY,
+        )));
   const reason = !keyPresent
     ? "missing_key"
     : !provider
       ? "unsupported_configuration"
       : e.CHLOE_FREE_TIER_CONFIRMED !== "1"
         ? "free_unconfirmed"
-        : e.CHLOE_EVALUATION_PASSED !== "1"
+        : !evaluated
           ? "evaluation_pending"
           : e.CHLOE_AI_ENABLED !== "1"
             ? "disabled"
@@ -118,10 +126,21 @@ export function chloeReadiness() {
     reason,
     keyPresent,
     freeConfirmed: e.CHLOE_FREE_TIER_CONFIRMED === "1",
-    evaluated: e.CHLOE_EVALUATION_PASSED === "1",
+    evaluated,
     provider: provider?.name ?? e.CHLOE_PROVIDER ?? "groq",
     model: provider?.models.rapido ?? null,
   };
+}
+export function evaluationKeyIdentity(model: string) {
+  return createHash("sha256")
+    .update(
+      JSON.stringify([
+        process.env.GROQ_API_KEY,
+        model,
+        process.env.CHLOE_EVALUATION_BUILD,
+      ]),
+    )
+    .digest("hex");
 }
 export function chloeAvailable() {
   return chloeReadiness().active;
@@ -149,6 +168,28 @@ const bounded = (value: string | undefined, fallback: number) => {
 export const providerChat: ChatFn = async ({ messages, tools, tier }) => {
   const provider = configuredProvider();
   if (!chloeAvailable() || !provider) throw new ChloeProviderError("disabled");
+  return callProvider(provider, { messages, tools, tier });
+};
+/** Only the authenticated evaluation runner uses this; never changes process-wide flags. */
+export function evaluationChat(model: string): ChatFn {
+  if (
+    !process.env.GROQ_API_KEY ||
+    process.env.CHLOE_FREE_TIER_CONFIRMED !== "1" ||
+    !(GROQ_CANDIDATES as readonly string[]).includes(model)
+  )
+    throw new ChloeProviderError("disabled");
+  const provider: Provider = {
+    name: "groq",
+    baseUrl: "https://api.groq.com/openai/v1",
+    key: process.env.GROQ_API_KEY,
+    models: { rapido: model, raciocinio: model },
+  };
+  return (request) => callProvider(provider, request);
+}
+async function callProvider(
+  provider: Provider,
+  { messages, tools, tier }: Parameters<ChatFn>[0],
+): ReturnType<ChatFn> {
   const body = JSON.stringify({
     model: provider.models[tier],
     messages,
@@ -227,7 +268,7 @@ export const providerChat: ChatFn = async ({ messages, tools, tier }) => {
     });
     if (settled.error) throw new ChloeProviderError("quota");
   }
-};
+}
 export function pickTier(text: string): Tier {
   return text.trim().split(/\s+/).length > 18 ||
     /\b(planej|organiz|resum|compar|explic|por que|sugest|ideias? para)\w*/i.test(

@@ -51,14 +51,15 @@ if (action === "inspect") {
   );
   process.exit(0);
 }
-if (!["prepare", "preview", "publish", "cloud-preview", "cloud-status", "promote"].includes(action))
+if (!["prepare", "preview", "publish", "cloud-preview", "cloud-production", "cloud-status", "promote"].includes(action))
   throw new Error("Ação inválida.");
 // Account Free, no card, 269.1/300 credits confirmed in the authenticated dashboard on 2026-10-18.
 // Do not upgrade, enable add-ons, register a domain or change the existing Axial project.
 if (!site) site = await api("axial/sites", "POST", { name: "central3c-caua" });
 await fs.mkdir(".netlify", { recursive: true });
 await fs.writeFile(".netlify/state.json", JSON.stringify({ siteId: site.id }));
-if(action==="cloud-preview"){
+if(action==="cloud-preview" || action==="cloud-production"){
+ if(action==="cloud-production" && process.env.CENTRAL_RELEASE_VALIDATED!=="1")throw new Error('Validar código e preview antes do build Production.');
  const zip=new JSZip();
  const files=execFileSync('git',['ls-files','-z','-c','-o','--exclude-standard'],{encoding:'utf8'}).split('\0').filter(Boolean);
  for(const file of new Set(files)){
@@ -66,7 +67,8 @@ if(action==="cloud-preview"){
   zip.file(file,await fs.readFile(file));
  }
  const archive=await zip.generateAsync({type:'nodebuffer',compression:'DEFLATE'});
- const response=await fetch(`https://api.netlify.com/api/v1/sites/${site.id}/builds?branch=codex-evolution-preview&title=3C%20OS%20preview%20validated%20source`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/zip'},body:archive});
+ const branch=action==='cloud-production'?'main':'codex-evolution-preview';
+ const response=await fetch(`https://api.netlify.com/api/v1/sites/${site.id}/builds?branch=${branch}&title=3C%20OS%20validated%20source`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/zip'},body:archive});
  if(!response.ok)throw new Error(`Build remoto não iniciado (${response.status}); sem mudança no Painel Axial.`);
  const receipt=await response.json();await fs.mkdir('.local-reports',{recursive:true});await fs.writeFile('.local-reports/netlify-build.json',JSON.stringify({id:receipt.id,deploy_id:receipt.deploy_id,site_id:site.id}));
  console.log(JSON.stringify({queued:true,build_id:receipt.id,deploy_id:receipt.deploy_id,source_files:files.length,source_bytes:archive.length}));process.exit(0);
