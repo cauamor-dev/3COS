@@ -1,13 +1,21 @@
 import type { EmailOtpType } from "@supabase/supabase-js";
 import { NextResponse, type NextRequest } from "next/server";
 import { cookies } from "next/headers";
-import { safeRedirectPath } from "@/lib/http/auth";
+import { safeRedirectPath, callbackOrigin } from "@/lib/http/auth";
+import { serverEnv } from "@/lib/env";
 import { createUserClient } from "@/lib/supabase/server";
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = request.nextUrl;
+  const { searchParams } = request.nextUrl;
+  const cookieStore = await cookies();
+  const origin = callbackOrigin(
+    request.headers,
+    cookieStore.get("3c_login_origin")?.value,
+    serverEnv.appUrl,
+    process.env.NODE_ENV === "development",
+  );
   const destination = safeRedirectPath(
-    searchParams.get("next") ?? (await cookies()).get("3c_login_next")?.value,
+    searchParams.get("next") ?? cookieStore.get("3c_login_next")?.value,
   );
 
   const supabase = await createUserClient();
@@ -24,6 +32,10 @@ export async function GET(request: NextRequest) {
   if (error) return NextResponse.redirect(`${origin}/login?erro=link`);
   const response = NextResponse.redirect(`${origin}${destination}`);
   response.cookies.set("3c_login_next", "", {
+    path: "/auth/callback",
+    maxAge: 0,
+  });
+  response.cookies.set("3c_login_origin", "", {
     path: "/auth/callback",
     maxAge: 0,
   });

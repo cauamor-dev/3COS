@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { callbackOrigin } from "@/lib/http/auth";
 
 const PUBLIC_PATHS = ["/login", "/auth", "/privacidade"];
 
@@ -41,6 +42,12 @@ export async function proxy(request: NextRequest) {
     !!email && email === process.env.ALLOWED_EMAIL?.trim().toLowerCase();
 
   const { pathname, search } = request.nextUrl;
+  const publicOrigin = callbackOrigin(
+    request.headers,
+    undefined,
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://central3c-caua.netlify.app",
+    process.env.NODE_ENV === "development",
+  );
   const isPublic =
     pathname === "/demos/agendamento.html" ||
     PUBLIC_PATHS.some(
@@ -48,7 +55,7 @@ export async function proxy(request: NextRequest) {
     );
 
   if (!allowed && !isPublic) {
-    const url = request.nextUrl.clone();
+    const url = new URL(pathname + search, publicOrigin);
     url.pathname = "/login";
     url.search =
       pathname === "/" ? "" : `?next=${encodeURIComponent(pathname + search)}`;
@@ -56,7 +63,7 @@ export async function proxy(request: NextRequest) {
   }
 
   if (allowed && pathname === "/login") {
-    return NextResponse.redirect(new URL("/", request.url));
+    return NextResponse.redirect(new URL("/", publicOrigin));
   }
 
   return response;

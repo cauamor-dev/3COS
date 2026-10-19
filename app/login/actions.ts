@@ -54,6 +54,13 @@ export async function sendLoginEmail(
     path: "/auth/callback",
     maxAge: 600,
   });
+  (await cookies()).set("3c_login_origin", origin, {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/auth/callback",
+    maxAge: 600,
+  });
   const { error } = await supabase.auth.signInWithOtp({
     email,
     options: {

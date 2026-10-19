@@ -51,3 +51,27 @@ export function loginOrigin(
   }
   return origin && allowed.has(origin) ? origin : canonical;
 }
+
+/** A platform adapter may put an immutable deploy URL in request.nextUrl.origin. */
+export function callbackOrigin(
+  requestHeaders: Headers,
+  originCookie: string | undefined,
+  configuredOrigin: string,
+  development = false,
+) {
+  const candidates = [originCookie];
+  for (const header of ["x-forwarded-host", "host"]) {
+    const host = requestHeaders.get(header)?.split(",")[0].trim();
+    if (host)
+      candidates.push(
+        `${development && /^(localhost|127\.0\.0\.1)(:|$)/.test(host) ? "http" : "https"}://${host}`,
+      );
+  }
+  for (const candidate of candidates)
+    if (
+      candidate &&
+      loginOrigin(candidate, configuredOrigin, development) === candidate
+    )
+      return candidate;
+  return new URL(configuredOrigin).origin;
+}
