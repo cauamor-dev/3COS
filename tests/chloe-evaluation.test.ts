@@ -16,6 +16,50 @@ function script(...answers: ChatMessage[]): ChatFn {
   return async () => answers.shift() ?? { role: "assistant", content: "Fim" };
 }
 describe("Avaliação verifica efeito real, não apenas nome de ferramenta", () => {
+  it("confere prazo em Brasília, inclusive quando UTC já virou o dia", async () => {
+    const c = {
+      id: "E02",
+      request: "Crie uma tarefa amanhã",
+      tool: "criar_tarefa",
+    };
+    expect(
+      (
+        await evaluateCase(
+          c,
+          script(
+            call("criar_tarefa", {
+              titulo: "Teste",
+              prazo: "2026-10-19T23:59:00-03:00",
+            }),
+          ),
+        )
+      ).passed,
+    ).toBe(true);
+    expect(
+      (
+        await evaluateCase(
+          c,
+          script(
+            call("criar_tarefa", {
+              titulo: "Teste",
+              prazo: "2026-10-19T00:00:00Z",
+            }),
+          ),
+        )
+      ).checks.correct_date,
+    ).toBe(false);
+  });
+  it("preserva tipo nota quando o pedido o explicita mesmo se o modelo sugerir ideia", async () => {
+    const r = await evaluateCase(
+      {
+        id: "E01",
+        request: "Crie uma nota: ideia de melhorar a lista",
+        tool: "criar_nota",
+      },
+      script(call("criar_nota", { titulo: "Melhorar lista", ideia: true })),
+    );
+    expect(r.checks.write_effect).toBe(true);
+  });
   it("aceita consulta de tarefas como alternativa sem relaxar a proibição de escrita", async () => {
     const r = await evaluateCase(
       {

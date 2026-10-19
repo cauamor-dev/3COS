@@ -75,6 +75,12 @@ export async function evaluateCase(c: EvaluationCase, provider: ChatFn) {
       : c.tool === "criar_nota"
         ? "nota"
         : "tarefa";
+  const localDate = (iso: string | null | undefined) =>
+    iso
+      ? new Date(iso).toLocaleDateString("en-CA", {
+          timeZone: "America/Sao_Paulo",
+        })
+      : undefined;
   const checks = {
     expected_tool: [c.tool, ...(c.alternativeTools ?? [])].some((t) =>
       tools.includes(t),
@@ -94,9 +100,9 @@ export async function evaluateCase(c: EvaluationCase, provider: ChatFn) {
       ),
     correct_date:
       c.id === "E04"
-        ? created.some((e) => e.starts_at?.startsWith("2026-10-20T"))
+        ? created.some((e) => localDate(e.starts_at) === "2026-10-20")
         : c.id === "E02" || c.id === "E03"
-          ? created.some((e) => e.due_at?.startsWith("2026-10-19T"))
+          ? created.some((e) => localDate(e.due_at) === "2026-10-19")
           : true,
     memory_source:
       !["E07", "E18"].includes(c.id) || result.reply.includes(decision.id),

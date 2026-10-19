@@ -200,7 +200,11 @@ async function runTool(
     case "criar_nota":
       return save({
         area_slug: "inbox",
-        tipo: args.ideia === true ? "ideia" : "nota",
+        tipo:
+          args.ideia === true &&
+          !/\b(?:crie|criar|guarde|salve)\s+(?:uma\s+)?nota\b/i.test(request)
+            ? "ideia"
+            : "nota",
         titulo,
         conteudo: /^(anote literalmente|guarde uma nota sem cortar)\s*:/i.test(
           request,
