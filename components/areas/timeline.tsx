@@ -8,6 +8,7 @@ import { editEntryAction } from "@/app/(app)/actions";
 import { EntryCard } from "@/components/central/entry-card";
 import { TYPE_LABEL } from "@/components/central/labels";
 import { Markdown } from "@/components/central/markdown";
+import { byDate, SortToggle, useSortOrder } from "@/components/central/sort-toggle";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
@@ -30,10 +31,11 @@ export function Timeline({ entries }: { entries: Entry[] }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [editing, setEditing] = useState<Entry | null>(null);
   const [, startTransition] = useTransition();
+  const { order, toggle } = useSortOrder("area-timeline");
 
   const visible = entries
     .filter((entry) => showArchived || !entry.archived)
-    .sort((a, b) => Number(b.pinned) - Number(a.pinned) || b.created_at.localeCompare(a.created_at));
+    .sort((a, b) => Number(b.pinned) - Number(a.pinned) || byDate(order, a.created_at, b.created_at));
   const archivedCount = entries.filter((entry) => entry.archived).length;
 
   function edit(input: EditEntryInput, message: string) {
@@ -50,6 +52,7 @@ export function Timeline({ entries }: { entries: Entry[] }) {
         <h2 className="mr-auto text-sm font-medium">
           Linha do tempo <span className="font-mono text-muted-foreground">· {entries.length - archivedCount}</span>
         </h2>
+        <SortToggle order={order} onToggle={toggle} />
         {archivedCount > 0 && (
           <label className="flex items-center gap-2 text-xs text-muted-foreground">
             <Switch checked={showArchived} onCheckedChange={setShowArchived} size="sm" />

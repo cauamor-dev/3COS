@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { SOURCE_COLOR, SOURCE_PERSONA } from "@/components/central/labels";
 import { Markdown } from "@/components/central/markdown";
+import { byDate, SortToggle, useSortOrder } from "@/components/central/sort-toggle";
 import { TimeAgo } from "@/components/central/time-ago";
 import { useCentral, useLiveEvents } from "@/components/providers/central-provider";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ export function MuralFeed({ initial }: { initial: Entry[] }) {
   const { openQuickEntry } = useCentral();
   const [live, setLive] = useState<Entry[]>([]);
   const [source, setSource] = useState<Source | null>(null);
+  const { order, toggle } = useSortOrder("mural");
 
   useLiveEvents((event) => {
     if (event.kind === "area-change" || event.entry.type !== "post") return;
@@ -30,8 +32,8 @@ export function MuralFeed({ initial }: { initial: Entry[] }) {
     for (const post of [...live, ...initial]) if (!byId.has(post.id)) byId.set(post.id, post);
     return [...byId.values()]
       .filter((post) => !post.archived && (!source || post.source === source))
-      .sort((a, b) => b.created_at.localeCompare(a.created_at));
-  }, [live, initial, source]);
+      .sort((a, b) => byDate(order, a.created_at, b.created_at));
+  }, [live, initial, source, order]);
 
   return (
     <div className="space-y-4">
@@ -42,9 +44,12 @@ export function MuralFeed({ initial }: { initial: Entry[] }) {
             {SOURCE_PERSONA[value].name}
           </Chip>
         ))}
-        <Button size="sm" variant="outline" className="ml-auto" onClick={() => openQuickEntry({ type: "post", areaSlug: "noticias" })}>
-          Publicar
-        </Button>
+        <div className="ml-auto flex items-center gap-1">
+          <SortToggle order={order} onToggle={toggle} />
+          <Button size="sm" variant="outline" onClick={() => openQuickEntry({ type: "post", areaSlug: "noticias" })}>
+            Publicar
+          </Button>
+        </div>
       </div>
 
       {posts.length === 0 ? (
