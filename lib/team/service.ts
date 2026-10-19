@@ -310,6 +310,11 @@ export class TeamService {
       if (f.entry_id) {
         const entry = await this.entry(f.entry_id);
         assertArea(this.actor, entry.area_id, "files");
+        if (thread.visibility === "shared" && entry.ai_access !== "shared")
+          throw new CentralError(
+            "forbidden",
+            "Este anexo não pode ser compartilhado nesta conversa.",
+          );
       } else if (
         this.actor.kind !== "human" ||
         f.owner_id !== this.actor.userId

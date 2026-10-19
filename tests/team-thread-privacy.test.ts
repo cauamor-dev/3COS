@@ -97,6 +97,58 @@ describe("Conversas acompanham a privacidade do registro", () => {
       owner_id: f.human.userId,
     });
   });
+  it("recusa anexo de registro privado em conversa compartilhada, mesmo com visibilidade antiga no arquivo", async () => {
+    const f = await fixture();
+    const secret = await f.owner.saveEntry(
+      { area_slug: f.area.slug, titulo: "Privado", ai_access: "private" },
+      "manual",
+    );
+    const thread = {
+      id: "00000000-0000-4000-8000-000000000020",
+      area_id: f.area.id,
+      visibility: "shared",
+      entry_id: null,
+    };
+    let inserted = false;
+    const table = (name: string) => {
+      const q = {
+        select: () => q,
+        order: () => q,
+        eq: () => q,
+        in: () => q,
+        or: () => q,
+        limit: async () => ({ data: [thread], error: null }),
+        insert: () => {
+          inserted = true;
+          return q;
+        },
+        maybeSingle: async () => ({ data: null, error: null }),
+        single: async () =>
+          name === "artifacts"
+            ? {
+                data: {
+                  entry_id: secret.registro.id,
+                  visibility: "shared",
+                  status: "ready",
+                  owner_id: f.human.userId,
+                },
+                error: null,
+              }
+            : { data: null, error: null },
+      };
+      return q;
+    };
+    const db = { from: table } as unknown as SupabaseClient;
+    await expect(
+      new TeamService(db, f.human, f.owner).postMessage({
+        thread_id: thread.id,
+        body: "Segue o anexo",
+        artifact_ids: ["00000000-0000-4000-8000-000000000030"],
+        idempotency_key: "teste-anexo-privado",
+      }),
+    ).rejects.toMatchObject({ code: "forbidden" });
+    expect(inserted).toBe(false);
+  });
   it("impede associar uma conversa ao trabalho de outra área", async () => {
     const f = await fixture();
     await expect(
