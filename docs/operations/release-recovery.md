@@ -26,6 +26,12 @@ Site URL e Vault app_url apontam ao host aprovado. Antes de config push, usar di
 
 Badge desligado somente na Central via Project configuration → General → Powered by Netlify badge. Sem custo/redeploy. [Documentação](https://docs.netlify.com/manage/projects/powered-by-netlify-badge/).
 
+### Segredos restritos a Production
+
+Promover um branch deploy não muda o contexto usado no build nem incorpora segredos cadastrados somente em Production. Depois de validar o código e o preview, usar `CENTRAL_RELEASE_VALIDATED=1` e `node scripts/netlify-release.mjs cloud-production`. Esse comando envia o ZIP **sem parâmetro branch**; conferir `cloud-status` com `context: production` antes de testar a chave no servidor. A Netlify trata ZIP com branch explícito como branch deploy neste projeto, inclusive quando o nome enviado é main. O comando recusa divergência de contexto. [Referência](https://www.netlify.com/changelog/2025-11-21-deploy-with-zip-file-supports-branch-deploys/).
+
+Chloe: seguir `docs/integrations/chloe.md`. A avaliação roda no host e lê apenas dados fictícios. A chave marcada como segredo permanece inacessível à CLI; não remover a proteção para testar. Alterações de chave/modelo/código invalidam a identidade de avaliação e exigem nova aprovação técnica.
+
 ## Backup/recuperação
 
 npm run backup:private exporta 33 tabelas, identidades Auth mínimas e bytes do bucket privado com SHA-256. .private-backups ignorado pelo Git. Snapshot por tabela, não físico/transacional/PITR. Não inclui senhas/sessões, Vault, cron ou configuração remota. Guardar cópia segura fora do PC sob controle do dono, nunca em repositório público ou IA.
@@ -34,7 +40,7 @@ npx tsx scripts/restore-check.mts .private-backups/<snapshot> usa **sempre banco
 
 Recuperação remota: pausar escritores/cron aplicáveis, snapshot atual, projeto isolado com mesmas migrações, identidades pelo mecanismo Auth suportado (sem inventar UUIDs), dados em ordem de dependência e upload dos objetos privados. Revogar clientes restaurados ou reaplicar as revogações posteriores ao snapshot antes de expor o serviço; nunca reativar token antigo por restauração de backup. Conferir propriedade/RLS/contagens/download antes de trocar configuração. Não há restauração remota automática destrutiva neste projeto.
 
-Rollback normal mantém tabelas aditivas/dados novos: desligar flags, pausar e restaurar release **compatível e segura** ou aplicar correção. Não executar down migration nem voltar API sem filtros de privacidade. Esta é a primeira release Netlify funcional; não existe deploy anterior Netlify seguro. Em incidente, pausar e corrigir mantendo o banco; voltar Auth/Vault somente após validar host anterior.
+Rollback normal mantém tabelas aditivas/dados novos: desligar flags, pausar e restaurar release **compatível e segura** ou aplicar correção. Não executar down migration nem voltar API sem filtros de privacidade. Conferir os recibos privados para escolher uma release validada e seu contexto; não restaurar deploy antigo apenas por estar Ready. Em incidente, pausar e corrigir mantendo o banco; voltar Auth/Vault somente após validar host anterior.
 
 Arquivos legados: --catalog mantém links. migrate-file-references.mjs --apply requer acesso canônico validado e CENTRAL_FILE_LINKS_READY=1; edita com revisão, sem deletar objetos. Não revoga capacidades antigas automaticamente. Revogação exige plano por objeto/consumidor; não rotacionar segredo Supabase geral para isso.
 
