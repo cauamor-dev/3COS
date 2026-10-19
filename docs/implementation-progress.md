@@ -30,3 +30,15 @@ Login humano na produção limitado pelo SMTP nativo: logs confirmaram dois emai
 5. Equipe individual Vega/Nox e resumo autenticado do Painel dependem das conexões/contrato; não fabricar execução.
 
 Evidências reais privadas: `.local-reports` e `.private-backups` (ignorados). Relatório: `relatorio-tecnico-2026-10-18.md`; critérios: `matriz-aceitacao.md`; recuperação: `operations/release-recovery.md`.
+
+## Revisão visual, desempenho e navegação — continuação de 18/10
+
+Commit `d1cad34`, branch `codex/team-workspace-ui`. Identidade, menu, arquitetura e aprovações preservados. Equipe passa a quadro + conversa em painel; criação/participantes/anexos sob demanda, pessoas/rotinas/conexões separadas da operação diária. Notificações, finanças, biblioteca e Carreira usam controles e estados coerentes. Sem novas dependências. Referências e decisões em `revisao-visual-equipe.md`.
+
+Modo desempenho explícito e persistido por aparelho: desliga efeitos/entradas animadas e usa lista no Cérebro sem montar canvas. Corrigida a animação pausada que deixava painéis transparentes. Links de feed/agenda/tarefas/busca/lembretes/ICS/histórico levam ao detalhe; avisos de entregas levam ao trabalho e aprovação ao recorte correto. A privacidade do registro vinculado também protege a conversa.
+
+143 testes em 26 arquivos, lint, tipos e build de produção passaram após os últimos ajustes. Navegador local: 390×844 sem largura excedente, quadro/chat/diálogos/seleção de horários e detalhe pelo início; Cérebro em desempenho com zero canvas. Preview autenticado: criou trabalho sanitizado na área de validação, vinculou conversa/participante, persistiu mensagem humana, cancelou trabalho, reabriu por URL direta e abriu o registro exato pelo aviso. Registro de teste arquivado; sem menção/disparo externo, controle global preservado em pausa. Modo desempenho conferido e preferência visual anterior restaurada.
+
+Deploy final Netlify `6ad566405976242d26d9be29` promovido para a Central. Login/manifesto HTTP 200 e REST/MCP/Equipe não autenticados HTTP 401 em produção. Preview continua com sessão real; login humano no domínio definitivo ainda depende de confirmação do dono. Nenhuma chave de modelo, cliente Grok, aparelho push ou conexão bancária foi ativada. Nenhuma alteração no Painel Axial.
+
+Não há benchmark no PC físico do trabalho ou aceite em telefone real; a redução de efeitos foi verificada, sem prometer resultado universal. Pesquisa/diagnóstico pessoal com bancos e prioridades permanece em relatório privado local, fora do Git público.
