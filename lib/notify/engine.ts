@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendOwnerPush } from "./notifier";
 import { checked } from "@/lib/team/service";
+import { noticePath } from "@/lib/central/links";
 
 /** The existing five-minute cron produces durable owner-only notices, then sends bounded push. */
 export async function notificationTick() {
@@ -12,6 +13,8 @@ export async function notificationTick() {
     owner_id: string;
     push_claim: string;
     path: string;
+    entry_id: string | null;
+    kind: string;
   }[];
   let sent = 0;
   for (const n of notices) {
@@ -22,7 +25,7 @@ export async function notificationTick() {
         {
           title: "3C OS",
           body: "Você tem um aviso na Central. Abra para consultar.",
-          path: n.path,
+          path: noticePath(n),
         },
         n.owner_id,
       );

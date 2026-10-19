@@ -50,6 +50,7 @@ export const DEFAULT_PREFERENCES: NotificationPreferences = {
   lead_minutes: 60,
 };
 export interface InboxNotice {
+  entry_id?: string | null;
   id: string;
   kind: string;
   title: string;

@@ -14,9 +14,11 @@ export interface TeamThread {
   area_id: string | null;
   participants: string[];
   visibility: string;
+  entry_id?: string | null;
 }
 export interface TeamWork {
   entry_id: string;
+  area_id: string;
   objective: string;
   assigned_agent_id: string;
   bridge_agent_id: string | null;
@@ -96,5 +98,6 @@ export interface TeamSnapshot {
     revoked_at: string | null;
   }[];
   demo: boolean;
+  demoMessages?: Record<string, TeamMessage[]>;
   error?: string;
 }

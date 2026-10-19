@@ -356,7 +356,7 @@ function NowCard({ cards, now, inboxCount, lastVisit }: { cards: Card[]; now: nu
     <section className="glass border-beam overflow-hidden rounded-2xl p-5">
       <p className="label-mono text-lilac">agora</p>
       {next ? (
-        <Link href={`/areas/${next.entry.area.slug}#${next.entry.id}`} className="mt-2 block">
+        <Link href={`/registros/${next.entry.id}`} className="mt-2 block">
           <p className="text-sm text-muted-foreground">
             Próximo {now !== null && dayKey(next.at) !== dayKey(now) ? dayLabel(dayKey(next.at), dayKey(now)).toLowerCase() : ""}
             {" · "}
@@ -428,7 +428,7 @@ function FeedCard({ card, now, onComplete, compact }: { card: Card; now: number 
   const x = useMotionValue(0);
   const revealOpacity = useTransform(x, [0, 90], [0, 1]);
   const swipeable = card.kind === "task";
-  const href = `/areas/${entry.area.slug}#${entry.id}`;
+  const href = `/registros/${entry.id}`;
 
   const body = (
     <div className={cn("glass relative flex gap-3 overflow-hidden rounded-xl", compact ? "p-3" : "p-3.5")} data-entry-id={entry.id}>

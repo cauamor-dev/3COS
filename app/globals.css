@@ -260,7 +260,12 @@
 /* Motion controls: user toggle, OS preference and hidden tab */
 html[data-motion="off"] *,
 html[data-motion="off"] *::before,
-html[data-motion="off"] *::after,
+html[data-motion="off"] *::after {
+  animation: none !important;
+  transition-duration: 0s !important;
+  scroll-behavior: auto !important;
+}
+
 html[data-tab="hidden"] .star-layer,
 html[data-tab="hidden"] .shooting-star,
 html[data-tab="hidden"] .border-beam::after {
@@ -272,15 +277,15 @@ html[data-motion="off"] .border-beam::after {
   display: none;
 }
 
-/* Pausing an entrance animation can strand content in its transparent first frame. */
-html[data-motion="off"] .animate-in {
-  animation: none !important;
-  opacity: 1 !important;
-  transform: none !important;
+/* Remove animations rather than pausing Radix entrances on their invisible frame. */
+html[data-performance="light"] * {
+  --tw-backdrop-blur: blur(0px) !important;
+  backdrop-filter: initial !important;
+  -webkit-backdrop-filter: initial !important;
 }
 html[data-performance="light"] .glass {
-  backdrop-filter: none !important;
-  -webkit-backdrop-filter: none !important;
+  backdrop-filter: initial !important;
+  -webkit-backdrop-filter: initial !important;
   background-color: var(--background);
   box-shadow: none !important;
 }

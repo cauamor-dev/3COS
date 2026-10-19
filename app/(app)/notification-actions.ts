@@ -22,7 +22,7 @@ export async function notificationInboxAction(before?: string) {
     const owner = m.central.actor.userId!;
     let q = m.supabase
       .from("notifications")
-      .select("id,kind,title,body,path,created_at,read_at,push_status")
+      .select("id,kind,title,body,path,entry_id,created_at,read_at,push_status")
       .eq("owner_id", owner)
       .order("created_at", { ascending: false })
       .order("id", { ascending: false })

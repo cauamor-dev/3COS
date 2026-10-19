@@ -127,7 +127,7 @@ function AgendaRow({ item }: { item: AgendaItem }) {
           {entry.recurrence && <Repeat className="size-3 shrink-0 text-muted-foreground" aria-label="Repete" />}
         </p>
         <div className="mt-0.5 flex flex-wrap items-center gap-x-3 font-mono text-[11px] text-muted-foreground">
-          <Link href={`/areas/${entry.area.slug}#${entry.id}`} className="hover:text-lilac">
+          <Link href={`/registros/${entry.id}`} className="hover:text-lilac">
             /{entry.area.slug}
           </Link>
           {entry.location && (

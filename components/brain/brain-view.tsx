@@ -297,16 +297,27 @@ export function BrainView({ initialEntries }: { initialEntries: GraphEntry[] }) 
           options={[["todos", "Todos os status"], ...AREA_STATUSES.map((s) => [s, STATUS_LABEL[s]] as [string, string])]}
           label="Status"
         />
-        <Button variant="outline" size="icon-sm" onClick={() => graphRef.current?.zoomToFit(500, 50)} aria-label="Enquadrar grafo">
+        {motionEnabled && <Button variant="outline" size="icon-sm" onClick={() => graphRef.current?.zoomToFit(500, 50)} aria-label="Enquadrar grafo">
           <Maximize2 />
-        </Button>
+        </Button>}
       </div>
 
       <div
         ref={containerRef}
         className="glass relative h-[calc(100dvh-16rem)] min-h-[420px] overflow-hidden rounded-2xl md:h-[calc(100dvh-13rem)]"
       >
-        {size.width > 0 && (
+        {!motionEnabled && <div className="h-full overflow-auto p-4">
+          <p className="mb-4 text-xs text-muted-foreground">Modo desempenho · suas conexões em lista</p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {graphData.nodes.filter((node) => !matches || matches.has(node.id)).map((node) => (
+              <button key={node.id} onClick={() => void openNode(node)} className="min-h-12 rounded-xl border bg-card px-4 py-3 text-left text-sm hover:border-primary/40">
+                <span className="block truncate font-medium">{node.label}</span>
+                <span className="text-xs text-muted-foreground">{node.kind === "entry" ? "Registro" : node.kind === "core" ? "Você" : "Área"}</span>
+              </button>
+            ))}
+          </div>
+        </div>}
+        {motionEnabled && size.width > 0 && (
           <ForceGraph2D<BrainNode, BrainLink>
             ref={graphRef}
             width={size.width}
@@ -352,7 +363,7 @@ export function BrainView({ initialEntries }: { initialEntries: GraphEntry[] }) 
             maxZoom={8}
           />
         )}
-        <div className="pointer-events-none absolute bottom-3 left-3 flex flex-wrap gap-3 rounded-lg bg-black/40 px-3 py-2 font-mono text-[10.5px] text-muted-foreground backdrop-blur">
+        {motionEnabled && <div className="pointer-events-none absolute bottom-3 left-3 flex flex-wrap gap-3 rounded-lg bg-black/40 px-3 py-2 font-mono text-[10.5px] text-muted-foreground backdrop-blur">
           <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-white shadow-[0_0_8px_#a78bfa]" /> você</span>
           <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full border border-primary bg-[#1a1430]" /> área</span>
           {SOURCES.map((s) => (
@@ -360,7 +371,7 @@ export function BrainView({ initialEntries }: { initialEntries: GraphEntry[] }) 
               <span className="size-2 rounded-full" style={{ background: CANVAS_COLOR[s] }} /> {SOURCE_LABEL[s]}
             </span>
           ))}
-        </div>
+        </div>}
         <div className="pointer-events-none absolute top-3 right-3 font-mono text-[11px] text-muted-foreground">
           {graphData.nodes.length} nós · {graphData.links.length} ligações
         </div>
@@ -442,8 +453,8 @@ function NodePanel({ selected, onClose }: { selected: Selected | null; onClose()
             <div className="px-4 pb-6">
               <Markdown>{selected.entry.content_md || "_Sem conteúdo._"}</Markdown>
               <Button asChild variant="outline" className="mt-6 w-full">
-                <Link href={`/areas/${selected.entry.area.slug}#${selected.entry.id}`}>
-                  Ver na área <ExternalLink />
+                <Link href={`/registros/${selected.entry.id}`}>
+                  Abrir registro completo <ExternalLink />
                 </Link>
               </Button>
             </div>

@@ -59,7 +59,7 @@ function eventLines(entry: Entry, appUrl: string, stamp: string): string[] {
   if (entry.recurrence && !isTask) lines.push(`RRULE:FREQ=${RRULE[entry.recurrence]}`);
   if (entry.location) lines.push(`LOCATION:${escapeText(entry.location)}`);
   if (entry.content_md) lines.push(`DESCRIPTION:${escapeText(entry.content_md.slice(0, 1000))}`);
-  lines.push(`URL:${appUrl}/areas/${entry.area.slug}#${entry.id}`);
+  lines.push(`URL:${appUrl}/registros/${entry.id}`);
 
   if (entry.remind_at) {
     const minutes = Math.max(0, Math.round((Date.parse(start) - Date.parse(entry.remind_at)) / 60_000));

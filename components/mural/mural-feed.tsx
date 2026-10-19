@@ -102,7 +102,7 @@ function PostCard({ post }: { post: Entry }) {
         </div>
       </header>
 
-      <h3 className="mt-3 font-medium leading-snug">{post.title}</h3>
+      <h3 className="mt-3 font-medium leading-snug"><Link href={`/registros/${post.id}`} className="hover:text-lilac">{post.title}</Link></h3>
       {post.content_md && (
         <div className={cn("relative mt-1", long && !expanded && "max-h-48 overflow-hidden")}>
           <Markdown className="text-[14px]">{post.content_md}</Markdown>

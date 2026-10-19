@@ -139,7 +139,26 @@ export class TeamService {
             .map((g) => g.areaId) ?? [],
         );
     else q = q.or(`visibility.eq.shared,owner_id.eq.${this.actor.userId}`);
-    return checked(await q.limit(100));
+    const threads = checked(await q.limit(100));
+    // A linked record can become private after a conversation is created.
+    const visible = await Promise.all(
+      threads.map(async (thread) => {
+        if (!thread.entry_id) return thread;
+        try {
+          const entry = await this.entry(thread.entry_id);
+          if (entry.area_id !== thread.area_id) return null;
+          return thread;
+        } catch (error) {
+          if (
+            error instanceof CentralError &&
+            ["not_found", "forbidden"].includes(error.code)
+          )
+            return null;
+          throw error;
+        }
+      }),
+    );
+    return visible.filter((thread) => thread !== null);
   }
   async createThread(raw: unknown) {
     const i = z
@@ -152,7 +171,12 @@ export class TeamService {
       .parse(raw);
     const a = await this.central.getArea(i.area_slug);
     assertArea(this.actor, a.id, "team");
-    if (i.entry_id) await this.entry(i.entry_id);
+    const linked = i.entry_id ? await this.entry(i.entry_id) : null;
+    if (linked && linked.area_id !== a.id)
+      throw new CentralError(
+        "invalid",
+        "A conversa deve estar na mesma área do trabalho.",
+      );
     if (i.participants.length) {
       const participants = checked(
         await this.db
@@ -172,6 +196,8 @@ export class TeamService {
           area_id: a.id,
           owner_id: this.actor.userId ?? null,
           entry_id: i.entry_id,
+          visibility:
+            linked && linked.ai_access !== "shared" ? "personal" : "shared",
           participants: i.participants,
         })
         .select("id,title")
@@ -356,11 +382,12 @@ export class TeamService {
         : null,
     };
   }
-  async queue() {
+  async queue(entryId?: string) {
     let q = this.db
       .from("work_items")
       .select("*")
       .order("created_at", { ascending: false });
+    if (entryId) q = q.eq("entry_id", z.uuid().parse(entryId));
     if (this.actor.kind !== "human")
       q = q
         .or(

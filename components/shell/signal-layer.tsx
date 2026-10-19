@@ -32,6 +32,7 @@ export function SignalLayer() {
     if (event.kind !== "entry-insert") return;
     const { entry } = event;
     if (entry.source === "manual") return;
+    if (!enabled || document.hidden) return;
 
     // Wait a frame so the feed can render the new entry first.
     requestAnimationFrame(() =>

@@ -1,865 +1,644 @@
 "use client";
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
-import { toast } from "sonner";
 import {
-  createClientAction,
-  createThreadAction,
-  createWorkAction,
-  decideApprovalAction,
-  decideApprovalsAction,
-  pauseTeamAction,
-  postTeamMessageAction,
-  revokeClientAction,
-  teamMessagesAction,
-  workStateAction,
-  toggleAgentAction,
-} from "@/app/(app)/team-actions";
+  CalendarClock,
+  CheckCheck,
+  CheckCircle2,
+  ChevronRight,
+  Circle,
+  CirclePause,
+  FileText,
+  FolderKanban,
+  Link2,
+  LockKeyhole,
+  MessageSquare,
+  Pause,
+  Play,
+  Plus,
+  Search,
+  ShieldCheck,
+  Users,
+  X,
+} from "lucide-react";
+import { toast } from "sonner";
+import { pauseTeamAction, workStateAction } from "@/app/(app)/team-actions";
 import { useCentral } from "@/components/providers/central-provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import type { TeamMessage, TeamSnapshot } from "@/lib/team/types";
-import { STATUS_LABEL, WORKFLOWS } from "@/lib/work/contracts";
+import { FieldSelect } from "@/components/ui/field-select";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from "@/components/ui/sheet";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import type { TeamSnapshot } from "@/lib/team/types";
+import { BOARD_COLUMNS, filterWorks, workColumn } from "@/lib/team/board";
+import { StatusBadge, TeamAvatar, stepLabel } from "./team-primitives";
+import { ClientDialog, ThreadDialog, WorkDialog } from "./team-forms";
+import { TeamChat } from "./team-chat";
+import {
+  TeamApprovals,
+  TeamConnections,
+  TeamDeliveries,
+  TeamPeople,
+  TeamRoutines,
+} from "./team-sections";
 
-const TABS = [
-  "Visão geral",
-  "Conversas",
-  "Trabalhos",
-  "Rotinas",
-  "Conexões",
-  "Entregas",
-  "Aprovações",
+const tabs = [
+  { id: "board", title: "Quadro", icon: FolderKanban },
+  { id: "chat", title: "Conversas", icon: MessageSquare },
+  { id: "approvals", title: "Aprovações", icon: ShieldCheck },
+  { id: "deliveries", title: "Entregas", icon: CheckCheck },
+  { id: "people", title: "Pessoas", icon: Users },
+  { id: "routines", title: "Rotinas", icon: CalendarClock },
+  { id: "connections", title: "Conexões", icon: Link2 },
 ];
-export function TeamView({ snapshot: s }: { snapshot: TeamSnapshot }) {
-  const [tab, setTab] = useState("Visão geral");
-  const [pending, run] = useTransition();
+export function TeamView({
+  snapshot: s,
+  focusWork,
+  focusTab,
+}: {
+  snapshot: TeamSnapshot;
+  focusWork?: string;
+  focusTab?: string;
+}) {
   const { areas } = useCentral();
-  const [thread, setThread] = useState(s.threads[0]?.id ?? "");
-  const [messages, setMessages] = useState<TeamMessage[]>([]);
-  const [body, setBody] = useState("");
-  const [replyTo, setReplyTo] = useState<string | undefined>();
-  const [token, setToken] = useState<string | null>(null);
-  const [error, setError] = useState("");
-  const [selectedApprovals, setSelectedApprovals] = useState<string[]>([]);
-  const [attached, setAttached] = useState<string[]>([]);
-  useEffect(() => {
-    let active = true;
-    if (thread)
-      void teamMessagesAction(thread).then((r) => {
-        if (active) {
-          if (r.ok) setMessages(r.data as TeamMessage[]);
-          else setError(r.error);
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [thread]);
-  const label = (status: string) => STATUS_LABEL[status] ?? status;
-  function execute(fn: () => Promise<{ ok: boolean; error?: string }>) {
-    run(async () => {
-      const r = await fn();
-      if (!r.ok) toast.error(r.error ?? "Falha na operação");
-    });
-  }
+  const [tab, setTab] = useState(
+      tabs.some((t) => t.id === focusTab) ? focusTab! : "board",
+    ),
+    [query, setQuery] = useState(""),
+    [area, setArea] = useState("all"),
+    [thread, setThread] = useState(s.threads[0]?.id ?? ""),
+    [threadQuery, setThreadQuery] = useState(""),
+    [selected, setSelected] = useState<string | null>(
+      focusTab === "approvals" ? null : (focusWork ?? null),
+    ),
+    [workOpen, setWorkOpen] = useState(false),
+    [threadOpen, setThreadOpen] = useState(false),
+    [threadWork, setThreadWork] = useState<string | null>(null),
+    [clientOpen, setClientOpen] = useState(false),
+    [draft, setDraft] = useState(""),
+    [token, setToken] = useState<string | null>(null);
+  const [pending, run] = useTransition();
   const active = s.works.filter(
     (w) => !["delivered", "cancelled"].includes(w.status),
   );
+  const approvals = s.approvals.filter((a) => a.status === "pending");
+  const works = filterWorks(s.works, query, area);
+  const work = s.works.find((w) => w.entry_id === selected);
+  const workThread = work
+    ? s.threads.find((t) => t.entry_id === work.entry_id)
+    : undefined;
+  const selectedThread = s.threads.find((t) => t.id === thread) ?? s.threads[0];
+  const newWork = (text = "") => {
+    setDraft(text);
+    setWorkOpen(true);
+  };
+  const openThread = (workId?: string) => {
+    setThreadWork(workId ?? null);
+    setThreadOpen(true);
+  };
   return (
-    <div className="space-y-5">
+    <div className="min-w-0 space-y-5">
       {s.error && (
-        <p role="status" className="glass rounded-xl p-4 text-sm">
+        <p
+          role="status"
+          className="rounded-xl border border-amber-400/20 bg-amber-400/5 px-4 py-3 text-sm"
+        >
           {s.error}
         </p>
       )}
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <p className="text-sm text-muted-foreground">
-          {active.length} trabalhos em aberto ·{" "}
-          {s.approvals.filter((a) => a.status === "pending").length} aguardando
-          revisão
+      {s.demo && (
+        <p className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-xs text-muted-foreground">
+          Demonstração visual · dados fictícios, sem ações ou conexões externas.
         </p>
-        <Button
-          variant={s.paused ? "outline" : "default"}
-          disabled={pending || s.demo}
-          onClick={() => execute(() => pauseTeamAction(!s.paused))}
-        >
-          {s.paused ? "Retomar execuções" : "Pausar tudo"}
-        </Button>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        Pausar tudo bloqueia novas execuções e efeitos pela Central. Rotinas
-        nativas do Grok/Claude continuam sob controle da plataforma.
-      </p>
-      <nav
-        aria-label="Seções da equipe"
-        className="flex gap-2 overflow-x-auto pb-2"
-      >
-        {TABS.map((t) => (
-          <Button
-            key={t}
-            size="sm"
-            variant={tab === t ? "secondary" : "ghost"}
-            onClick={() => setTab(t)}
+      )}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <span className="inline-flex items-center gap-2">
+            <span
+              className="size-1.5 rounded-full bg-lilac"
+              aria-hidden="true"
+            />
+            <strong className="font-medium">{active.length}</strong>
+            <span className="text-muted-foreground">em aberto</span>
+          </span>
+          <span className="h-4 border-l" />
+          <button
+            className="inline-flex min-h-10 items-center gap-2 text-muted-foreground hover:text-foreground"
+            onClick={() => setTab("approvals")}
           >
-            {t}
+            <ShieldCheck className="size-4" />
+            <strong className="font-medium text-foreground">
+              {approvals.length}
+            </strong>
+            para revisar
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            className="h-10"
+            disabled={pending || s.demo}
+            onClick={() =>
+              run(async () => {
+                try {
+                  const r = await pauseTeamAction(!s.paused);
+                  if (!r.ok) toast.error(r.error);
+                } catch {
+                  toast.error("Não foi possível alterar a pausa.");
+                }
+              })
+            }
+          >
+            {s.paused ? <Play /> : <Pause />}
+            {s.paused ? "Retomar" : "Pausar tudo"}
           </Button>
-        ))}
-      </nav>
-      {tab === "Visão geral" && (
-        <>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {active.slice(0, 6).map((w) => (
-              <article key={w.entry_id} className="glass rounded-xl p-4">
-                <Link
-                  className="font-medium hover:text-lilac"
-                  href={`/registros/${w.entry_id}`}
-                >
-                  {w.objective}
-                </Link>
-                <p className="mt-2 text-xs text-lilac">
-                  {s.agents.find((a) => a.id === w.assigned_agent_id)?.name} ·{" "}
-                  {label(w.status)}
-                </p>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Próximo passo: {w.current_step}
-                </p>
-              </article>
+          <Button className="h-10 px-4" onClick={() => newWork()}>
+            <Plus />
+            Novo trabalho
+          </Button>
+        </div>
+      </div>
+      {s.paused && (
+        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+          <CirclePause className="size-3.5 shrink-0" />
+          <span>Execuções da Central pausadas.</span>
+          <details className="relative">
+            <summary className="cursor-pointer text-lilac">Entender</summary>
+            <div className="absolute left-0 top-7 z-20 w-64 rounded-xl border bg-popover p-4 text-xs leading-relaxed shadow-lg">
+              A pausa bloqueia novas execuções da Central. Rotinas nativas do
+              Grok e do Claude continuam sob controle da plataforma.
+            </div>
+          </details>
+        </div>
+      )}
+      <Tabs value={tab} onValueChange={setTab} className="min-w-0 gap-5">
+        <div className="no-scrollbar max-w-full overflow-x-auto overflow-y-hidden border-b pb-1">
+          <TabsList
+            variant="line"
+            aria-label="Seções da equipe"
+            className="h-12! gap-1 p-0"
+          >
+            {tabs.map((t) => (
+              <TabsTrigger
+                key={t.id}
+                value={t.id}
+                className="h-11! gap-2 px-3 data-active:text-lilac data-active:after:bg-primary"
+              >
+                <t.icon className="size-4" />
+                {t.title}
+                {t.id === "approvals" && approvals.length > 0 && (
+                  <span className="rounded bg-primary/15 px-1.5 text-[10px] text-lilac">
+                    {approvals.length}
+                  </span>
+                )}
+              </TabsTrigger>
             ))}
+          </TabsList>
+        </div>
+        <TabsContent value="board" className="min-w-0 space-y-4">
+          <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="relative min-w-0 flex-1">
+              <Search className="pointer-events-none absolute top-3 left-3 size-4 text-muted-foreground" />
+              <Input
+                aria-label="Buscar trabalho"
+                placeholder="Buscar no quadro…"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                className="h-10 pl-9"
+              />
+            </div>
+            <div className="w-full sm:w-56">
+              <FieldSelect
+                label="Filtrar por projeto"
+                value={area}
+                onValueChange={setArea}
+                options={[
+                  { value: "all", label: "Todos os projetos" },
+                  ...areas.map((a) => ({ value: a.id, label: a.name })),
+                ]}
+              />
+            </div>
           </div>
-          {!active.length && (
-            <p className="text-sm text-muted-foreground">
-              Nenhum trabalho em aberto. Crie um em Trabalhos ou use Pedir à
-              equipe na Chloe.
+          <div className="grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            {BOARD_COLUMNS.map((col) => {
+              const cards = works.filter(
+                (w) => workColumn(w.status) === col.id,
+              );
+              return (
+                <section
+                  key={col.id}
+                  aria-label={col.title}
+                  className="min-w-0 rounded-2xl border bg-muted/15 p-3"
+                >
+                  <header className="mb-4 flex items-center gap-2 px-1 pt-1">
+                    <span
+                      className={`size-2 shrink-0 rounded-full ${col.id === "doing" ? "bg-primary" : col.id === "review" ? "bg-amber-300" : "bg-muted-foreground/50"}`}
+                      aria-hidden="true"
+                    />
+                    <h2 className="text-sm font-medium">{col.title}</h2>
+                    <span className="ml-auto rounded-md bg-muted/60 px-2 py-0.5 text-[11px] text-muted-foreground">
+                      {cards.length}
+                    </span>
+                  </header>
+                  <div className="space-y-3">
+                    {cards.map((w) => {
+                      const agent = s.agents.find(
+                        (a) => a.id === w.assigned_agent_id,
+                      );
+                      return (
+                        <button
+                          key={w.entry_id}
+                          onClick={() => setSelected(w.entry_id)}
+                          className="group w-full min-w-0 rounded-xl border bg-card p-4 text-left shadow-sm transition-colors hover:border-primary/40 hover:bg-accent/20 focus-visible:outline-2 focus-visible:outline-ring"
+                        >
+                          <p className="mb-2 truncate text-[11px] text-muted-foreground">
+                            {areas.find((a) => a.id === w.area_id)?.name ??
+                              "Projeto"}
+                          </p>
+                          <h3 className="break-words text-sm font-semibold leading-relaxed">
+                            {w.objective}
+                          </h3>
+                          <p className="mt-3 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                            {stepLabel(w.current_step)}
+                          </p>
+                          <div className="mt-4 flex items-center justify-between gap-2">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <TeamAvatar
+                                name={agent?.name ?? "Equipe"}
+                                small
+                              />
+                              <span className="truncate text-xs">
+                                {agent?.name ?? "Equipe"}
+                              </span>
+                            </div>
+                            {s.threads.some(
+                              (t) => t.entry_id === w.entry_id,
+                            ) && (
+                              <MessageSquare
+                                className="size-3.5 text-muted-foreground"
+                                aria-label="Tem conversa"
+                              />
+                            )}
+                          </div>
+                          <div className="mt-3">
+                            <StatusBadge status={w.status} />
+                          </div>
+                        </button>
+                      );
+                    })}
+                    {!cards.length && (
+                      <div className="flex min-h-36 flex-col items-center justify-center rounded-xl border border-dashed px-3 text-center text-xs text-muted-foreground">
+                        {col.id === "done" ? (
+                          <CheckCircle2 className="mb-3 size-5 opacity-40" />
+                        ) : (
+                          <Circle className="mb-3 size-5 opacity-40" />
+                        )}
+                        <p>
+                          {col.id === "todo"
+                            ? "Espaço para o próximo passo"
+                            : col.id === "doing"
+                              ? "Nenhum trabalho em execução"
+                              : col.id === "review"
+                                ? "Nenhuma decisão pendente"
+                                : "As entregas aparecem aqui"}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+          {!works.length && s.works.length > 0 && (
+            <p className="py-2 text-center text-sm text-muted-foreground">
+              Nenhum trabalho encontrado com esses filtros.
             </p>
           )}
-          <h2 className="font-medium">Pessoas e agentes</h2>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {s.agents.map((a) => (
-              <article key={a.id} className="glass rounded-xl p-4">
-                <p>
-                  {a.name}{" "}
-                  <span className="text-xs text-muted-foreground">
-                    · {a.platform}
-                  </span>
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">{a.role}</p>
-                <p className="mt-2 text-xs text-lilac">
-                  {a.handle === "teo"
-                    ? "Fora da automação"
-                    : a.external_active && !a.active
-                      ? "Ativo no Grok; conexão Central pendente"
-                      : a.active
-                        ? "Habilitado; disponibilidade depende da conexão"
-                        : "Pausado / ativação pendente"}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Última atividade: consulte execuções comprovadas nos
-                  trabalhos.
-                </p>
-                {!["human", "central"].includes(a.platform) &&
-                  (a.platform !== "grok" || a.handle === "clara") && (
-                    <Button
-                      size="xs"
-                      variant="outline"
-                      className="mt-2"
-                      disabled={pending || s.demo}
-                      onClick={() =>
-                        execute(() =>
-                          toggleAgentAction({ id: a.id, active: !a.active }),
-                        )
-                      }
+        </TabsContent>
+        <TabsContent value="chat">
+          <div className="glass grid min-w-0 overflow-hidden rounded-2xl md:grid-cols-[220px_minmax(0,1fr)]">
+            <aside className="min-w-0 border-b bg-background/30 md:border-r md:border-b-0">
+              <div className="flex items-center justify-between gap-2 p-4">
+                <h2 className="text-sm font-semibold">Conversas</h2>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="size-9"
+                  aria-label="Nova conversa"
+                  onClick={() => openThread()}
+                >
+                  <Plus />
+                </Button>
+              </div>
+              <div className="px-3 pb-3">
+                <Input
+                  aria-label="Buscar conversa"
+                  placeholder="Buscar…"
+                  value={threadQuery}
+                  onChange={(e) => setThreadQuery(e.target.value)}
+                  className="h-9"
+                />
+              </div>
+              <div className="flex gap-1 overflow-x-auto p-2 pt-0 md:block md:max-h-[65dvh] md:space-y-1 md:overflow-y-auto">
+                {s.threads
+                  .filter((t) =>
+                    t.title
+                      .toLocaleLowerCase()
+                      .includes(threadQuery.toLocaleLowerCase()),
+                  )
+                  .map((t) => (
+                    <button
+                      key={t.id}
+                      className={`flex min-h-14 min-w-36 items-center gap-3 rounded-xl px-3 py-2 text-left transition-colors md:w-full ${selectedThread?.id === t.id ? "border border-primary/20 bg-primary/10" : "border border-transparent hover:bg-muted/50"}`}
+                      onClick={() => setThread(t.id)}
                     >
-                      {a.active
-                        ? "Pausar aquisições"
-                        : "Habilitar aquisições na Central"}
+                      {t.visibility === "personal" ? (
+                        <LockKeyhole className="size-4 shrink-0 text-muted-foreground" />
+                      ) : (
+                        <MessageSquare
+                          className={`size-4 shrink-0 ${selectedThread?.id === t.id ? "text-lilac" : "text-muted-foreground"}`}
+                        />
+                      )}
+                      <span className="min-w-0">
+                        <span className="block max-w-36 truncate text-sm font-medium">
+                          {t.title}
+                        </span>
+                        <span className="mt-1 block max-w-36 truncate text-[11px] text-muted-foreground">
+                          {areas.find((a) => a.id === t.area_id)?.name ??
+                            "Geral"}
+                        </span>
+                      </span>
+                    </button>
+                  ))}
+              </div>
+            </aside>
+            <div className="min-w-0">
+              {selectedThread ? (
+                <TeamChat
+                  key={selectedThread.id}
+                  s={s}
+                  threadId={selectedThread.id}
+                  onTask={(text) => newWork(text)}
+                />
+              ) : (
+                <EmptyState
+                  icon={MessageSquare}
+                  title="Uma conversa para cada projeto"
+                  description="Decisões, referências e próximos passos juntos."
+                  action={
+                    <Button className="h-10" onClick={() => openThread()}>
+                      <Plus />
+                      Nova conversa
                     </Button>
-                  )}
-              </article>
-            ))}
+                  }
+                />
+              )}
+            </div>
           </div>
-        </>
-      )}
-      {tab === "Conversas" && (
-        <div className="space-y-4">
-          <label className="block text-sm">
-            Conversa
-            <select
-              className="mt-1 block w-full rounded-lg border bg-background p-2"
-              value={thread}
-              onChange={(e) => {
-                setThread(e.target.value);
-                setReplyTo(undefined);
-              }}
-            >
-              {s.threads.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.title}
-                </option>
-              ))}
-            </select>
-          </label>
-          <form
-            className="flex gap-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const f = new FormData(e.currentTarget);
-              execute(() =>
-                createThreadAction({
-                  title: f.get("title"),
-                  area_slug: f.get("area"),
-                  participants: f.getAll("participants"),
-                }),
-              );
-            }}
-          >
-            <Input
-              name="title"
-              placeholder="Conversa de um trabalho"
-              required
-              aria-label="Título da conversa"
-            />
-            <select
-              aria-label="Área da conversa"
-              name="area"
-              className="min-w-0 rounded-lg border bg-background p-2"
-            >
-              {areas.map((a) => (
-                <option key={a.id} value={a.slug}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-            <Button disabled={pending || s.demo}>Criar</Button>
-            <select
-              multiple
-              name="participants"
-              aria-label="Participantes da conversa"
-              className="max-h-20 max-w-36 rounded border bg-background p-1 text-xs"
-            >
-              {s.agents.map((a) => (
-                <option key={a.id} value={a.id}>
-                  {a.name}
-                </option>
-              ))}
-            </select>
-          </form>
-          <p className="text-xs text-muted-foreground">
-            Participantes:{" "}
-            {(s.threads.find((t) => t.id === thread)?.participants ?? [])
-              .map((id) => s.agents.find((a) => a.id === id)?.name)
-              .filter(Boolean)
-              .join(", ") || "não definidos"}
-            . Menções reconhecem @clara, @rastro, @tereza, @atlas, @nox e @vega.
-          </p>
-          {error && <p role="alert">{error}</p>}
-          <div className="space-y-3">
-            {[...messages].reverse().map((m) => (
-              <article key={m.id} className="glass rounded-xl p-4">
-                <p className="text-xs text-lilac">
-                  {s.agents.find((a) => a.id === m.agent_id)?.name ??
-                    (m.source === "manual" ? "Você" : m.source)}{" "}
-                  ·{" "}
-                  {new Date(m.created_at).toLocaleString("pt-BR", {
-                    timeZone: "America/Sao_Paulo",
-                  })}
+        </TabsContent>
+        <TabsContent value="approvals">
+          <TeamApprovals s={s} focusWork={focusWork} />
+        </TabsContent>
+        <TabsContent value="deliveries">
+          <TeamDeliveries s={s} />
+        </TabsContent>
+        <TabsContent value="people">
+          <TeamPeople s={s} />
+        </TabsContent>
+        <TabsContent value="routines">
+          <TeamRoutines s={s} />
+        </TabsContent>
+        <TabsContent value="connections">
+          <TeamConnections s={s} onConnect={() => setClientOpen(true)} />
+        </TabsContent>
+      </Tabs>
+      <Sheet
+        open={!!work}
+        onOpenChange={(v) => {
+          if (!v) setSelected(null);
+        }}
+      >
+        <SheetContent className="w-full! gap-0 overflow-y-auto sm:max-w-2xl!">
+          <SheetHeader className="border-b px-6 pt-7 pb-5">
+            <SheetTitle className="pr-8 text-xl leading-snug">
+              {work?.objective}
+            </SheetTitle>
+            <SheetDescription>
+              {s.agents.find((a) => a.id === work?.assigned_agent_id)?.name ??
+                "Equipe"}{" "}
+              · {areas.find((a) => a.id === work?.area_id)?.name ?? "Projeto"}
+            </SheetDescription>
+          </SheetHeader>
+          {work && (
+            <>
+              <div className="space-y-3 border-b px-6 py-4">
+                <StatusBadge status={work.status} />
+                <p className="text-sm leading-relaxed">
+                  <span className="text-muted-foreground">
+                    Próximo passo ·{" "}
+                  </span>
+                  {stepLabel(work.current_step)}
                 </p>
-                <p className="mt-2 whitespace-pre-wrap break-words text-sm">
-                  {m.body}
-                </p>
-                {m.reply_to && (
-                  <p className="mt-1 text-xs text-muted-foreground">
-                    Em resposta a:{" "}
-                    {messages
-                      .find((p) => p.id === m.reply_to)
-                      ?.body.slice(0, 100) ?? "mensagem anterior"}
+                {work.last_error && (
+                  <p role="alert" className="text-sm text-destructive">
+                    {work.last_error}
                   </p>
                 )}
-                {(m.refs ?? []).map((ref) => (
-                  <a
-                    key={ref.artifact_id}
-                    className="mt-2 block text-xs text-lilac"
-                    href={`/api/files/${ref.artifact_id}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Abrir anexo autorizado
-                  </a>
-                ))}
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {m.origin_chat_title ?? "origem não informada"}
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  <Button
-                    size="xs"
-                    variant="ghost"
-                    onClick={() => setReplyTo(m.id)}
-                  >
-                    Responder
-                  </Button>
-                  <Button
-                    size="xs"
-                    variant="ghost"
-                    onClick={() => {
-                      setTab("Trabalhos");
-                      setBody(m.body);
-                    }}
-                  >
-                    Transformar em tarefa
-                  </Button>
-                  {m.entry_id && (
-                    <Link
-                      className="text-xs text-lilac"
-                      href={`/registros/${m.entry_id}`}
-                    >
-                      Trabalho relacionado
-                    </Link>
+              </div>
+              <Tabs defaultValue="conversation" className="gap-0">
+                <TabsList className="mx-6 my-4 h-10">
+                  <TabsTrigger value="conversation" className="px-4">
+                    <MessageSquare />
+                    Conversa
+                  </TabsTrigger>
+                  <TabsTrigger value="details" className="px-4">
+                    <FileText />
+                    Detalhes
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="conversation">
+                  {workThread ? (
+                    <TeamChat
+                      key={workThread.id}
+                      s={s}
+                      threadId={workThread.id}
+                      onTask={(text) => newWork(text)}
+                    />
+                  ) : (
+                    <EmptyState
+                      icon={MessageSquare}
+                      title="Converse sobre este trabalho"
+                      description="Mantenha decisões e arquivos ligados ao cartão."
+                      action={
+                        <Button
+                          className="h-10"
+                          onClick={() => openThread(work.entry_id)}
+                        >
+                          <Plus />
+                          Iniciar conversa
+                        </Button>
+                      }
+                    />
                   )}
-                </div>
-              </article>
-            ))}
-          </div>
-          {messages.length >= 30 && (
+                </TabsContent>
+                <TabsContent value="details" className="space-y-5 px-6 pb-6">
+                  <div>
+                    <h3 className="mb-2 text-sm font-medium">
+                      Entrega esperada
+                    </h3>
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                      {work.expected_output}
+                    </p>
+                  </div>
+                  <div>
+                    <h3 className="mb-2 text-sm font-medium">
+                      Critério de pronto
+                    </h3>
+                    <p className="whitespace-pre-wrap text-sm leading-relaxed text-muted-foreground">
+                      {work.acceptance_criteria}
+                    </p>
+                  </div>
+                  {work.due_at && (
+                    <p className="text-sm">
+                      Prazo:{" "}
+                      {new Date(work.due_at).toLocaleString("pt-BR", {
+                        timeZone: "America/Sao_Paulo",
+                      })}
+                    </p>
+                  )}
+                  <div className="space-y-2">
+                    {s.artifacts
+                      .filter((a) => a.entry_id === work.entry_id)
+                      .map((a) => (
+                        <a
+                          key={a.id}
+                          href={`/api/files/${a.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-3 rounded-lg border p-3 text-sm hover:bg-muted/40"
+                        >
+                          <FileText className="size-4 shrink-0 text-lilac" />
+                          <span className="truncate">{a.name}</span>
+                        </a>
+                      ))}
+                  </div>
+                  <Link
+                    href={`/registros/${work.entry_id}`}
+                    className="inline-flex min-h-10 items-center gap-2 text-sm text-lilac"
+                  >
+                    Abrir registro completo <ChevronRight className="size-4" />
+                  </Link>
+                  {!["delivered", "cancelled"].includes(work.status) && (
+                    <details className="border-t pt-4 text-sm">
+                      <summary className="cursor-pointer text-muted-foreground">
+                        Ações do trabalho
+                      </summary>
+                      <Button
+                        variant="destructive"
+                        className="mt-3 h-10"
+                        disabled={pending || s.demo}
+                        onClick={() =>
+                          run(async () => {
+                            const r = await workStateAction({
+                              entry_id: work.entry_id,
+                              status: "cancelled",
+                            });
+                            if (!r.ok) toast.error(r.error);
+                          })
+                        }
+                      >
+                        <X />
+                        Cancelar trabalho
+                      </Button>
+                    </details>
+                  )}
+                </TabsContent>
+              </Tabs>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+      <WorkDialog
+        s={s}
+        open={workOpen}
+        onOpenChange={setWorkOpen}
+        draft={draft}
+      />
+      <ThreadDialog
+        s={s}
+        open={threadOpen}
+        onOpenChange={setThreadOpen}
+        work={s.works.find((w) => w.entry_id === threadWork)}
+        onCreated={(id) => {
+          setThread(id);
+          if (!threadWork) setTab("chat");
+        }}
+      />
+      <ClientDialog
+        s={s}
+        open={clientOpen}
+        onOpenChange={setClientOpen}
+        onToken={setToken}
+      />
+      <Dialog
+        open={!!token}
+        onOpenChange={(v) => {
+          if (!v) setToken(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Acesso gerado</DialogTitle>
+            <DialogDescription>
+              Copie agora para o segredo da plataforma autorizada. Ele não será
+              exibido novamente.
+            </DialogDescription>
+          </DialogHeader>
+          <Input
+            type="password"
+            aria-label="Token gerado"
+            readOnly
+            value={token ?? ""}
+            onFocus={(e) => e.target.select()}
+          />
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" onClick={() => setToken(null)}>
+              Ocultar
+            </Button>
             <Button
-              variant="outline"
               onClick={() => {
-                const last = messages.at(-1);
-                if (last)
-                  run(async () => {
-                    const r = await teamMessagesAction(
-                      thread,
-                      last.created_at,
-                      last.id,
+                if (token)
+                  void navigator.clipboard
+                    .writeText(token)
+                    .then(() =>
+                      toast.success(
+                        "Copiado para configurar o destino autorizado.",
+                      ),
+                    )
+                    .catch(() =>
+                      toast.error("Selecione e copie o campo manualmente."),
                     );
-                    if (r.ok)
-                      setMessages((current) => [
-                        ...current,
-                        ...(r.data as TeamMessage[]),
-                      ]);
-                    else toast.error(r.error);
-                  });
               }}
             >
-              Carregar anteriores
+              Copiar token
             </Button>
-          )}
-          <form
-            className="space-y-2"
-            onSubmit={(e) => {
-              e.preventDefault();
-              run(async () => {
-                const r = await postTeamMessageAction({
-                  thread_id: thread,
-                  body,
-                  reply_to: replyTo,
-                  artifact_ids: attached,
-                  idempotency_key: crypto.randomUUID(),
-                });
-                if (r.ok) {
-                  setBody("");
-                  setReplyTo(undefined);
-                  setAttached([]);
-                  const next = await teamMessagesAction(thread);
-                  if (next.ok) setMessages(next.data as TeamMessage[]);
-                } else toast.error(r.error);
-              });
-            }}
-          >
-            {replyTo && (
-              <p className="text-xs">
-                Respondendo à mensagem selecionada{" "}
-                <button type="button" onClick={() => setReplyTo(undefined)}>
-                  Cancelar
-                </button>
-              </p>
-            )}
-            <Textarea
-              required
-              maxLength={20000}
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              aria-label="Mensagem"
-              placeholder="Mensagem para a equipe. @menções aguardam a próxima rotina."
-            />
-            <Button disabled={pending || !thread || s.demo}>
-              Enviar à conversa
-            </Button>
-            <label className="block text-xs">
-              Anexar arquivo da biblioteca (Ctrl/Cmd para selecionar mais de um)
-              <select
-                multiple
-                className="mt-1 block max-h-24 w-full rounded border bg-background p-2"
-                value={attached}
-                onChange={(e) =>
-                  setAttached([...e.target.selectedOptions].map((o) => o.value))
-                }
-              >
-                {s.artifacts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <p className="text-xs text-muted-foreground">
-              Mensagens não criam tarefas nem confirmam acionamento externo.
-            </p>
-          </form>
-        </div>
-      )}
-      {tab === "Trabalhos" && (
-        <div className="space-y-5">
-          <form
-            className="glass space-y-3 rounded-xl p-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const f = new FormData(e.currentTarget);
-              execute(() =>
-                createWorkAction({
-                  area_slug: String(f.get("area")),
-                  objective: String(f.get("objective")),
-                  assigned_agent: String(f.get("agent")),
-                  workflow_key: String(
-                    f.get("workflow"),
-                  ) as keyof typeof WORKFLOWS,
-                  expected_output: String(f.get("output")),
-                  acceptance_criteria: String(f.get("criteria")),
-                  idempotency_key: crypto.randomUUID(),
-                }),
-              );
-            }}
-          >
-            <h2 className="font-medium">Novo trabalho</h2>
-            <Textarea
-              name="objective"
-              required
-              minLength={3}
-              defaultValue={body}
-              placeholder="Objetivo"
-              aria-label="Objetivo do trabalho"
-            />
-            <div className="grid gap-2 sm:grid-cols-3">
-              <select
-                aria-label="Área do trabalho"
-                name="area"
-                className="min-w-0 rounded-lg border bg-background p-2"
-              >
-                {areas.map((a) => (
-                  <option key={a.id} value={a.slug}>
-                    {a.name}
-                  </option>
-                ))}
-              </select>
-              <select
-                name="agent"
-                aria-label="Responsável"
-                className="rounded-lg border bg-background p-2"
-              >
-                {s.agents
-                  .filter((a) => a.handle !== "teo")
-                  .map((a) => (
-                    <option key={a.id} value={a.handle}>
-                      {a.name}
-                    </option>
-                  ))}
-              </select>
-              <select
-                name="workflow"
-                aria-label="Fluxo"
-                className="rounded-lg border bg-background p-2"
-              >
-                {Object.entries(WORKFLOWS).map(([k, v]) => (
-                  <option key={k} value={k}>
-                    {v.next}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <Input
-              name="output"
-              required
-              placeholder="Entrega esperada"
-              aria-label="Entrega esperada"
-            />
-            <Input
-              name="criteria"
-              required
-              placeholder="Critério de pronto"
-              aria-label="Critério de pronto"
-            />
-            <Button disabled={pending || s.demo}>Criar trabalho</Button>
-          </form>
-          {s.works.map((w) => (
-            <article
-              key={w.entry_id}
-              className="glass space-y-2 rounded-xl p-4"
-            >
-              <Link
-                href={`/registros/${w.entry_id}`}
-                className="font-medium text-lilac"
-              >
-                {w.objective}
-              </Link>
-              <p className="text-sm">
-                {s.agents.find((a) => a.id === w.assigned_agent_id)?.name} ·{" "}
-                {label(w.status)}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                Próximo passo: {w.current_step}
-              </p>
-              <details className="text-sm">
-                <summary>Entrega e critérios</summary>
-                <p className="mt-2">{w.expected_output}</p>
-                <p>{w.acceptance_criteria}</p>
-              </details>
-              {w.last_error && (
-                <p role="alert" className="text-sm text-destructive">
-                  {w.last_error}
-                </p>
-              )}
-              {!["delivered", "cancelled"].includes(w.status) && (
-                <Button
-                  size="xs"
-                  variant="ghost"
-                  disabled={pending}
-                  onClick={() =>
-                    execute(() =>
-                      workStateAction({
-                        entry_id: w.entry_id,
-                        status: "cancelled",
-                      }),
-                    )
-                  }
-                >
-                  Cancelar trabalho
-                </Button>
-              )}
-            </article>
-          ))}
-        </div>
-      )}
-      {tab === "Rotinas" && (
-        <div className="space-y-3">
-          {s.schedules.map((r) => (
-            <article className="glass space-y-2 rounded-xl p-4" key={r.id}>
-              <h2>{r.title}</h2>
-              <p className="text-sm">
-                {r.cadence} · Brasília · origem: {r.origin}
-              </p>
-              <p className="text-xs text-lilac">
-                {r.verified_at
-                  ? r.active
-                    ? "Ativa"
-                    : "Pausada"
-                  : "Horário informado; verificação pendente"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                Última execução: {r.last_run_at ?? "não comprovada"} · Próxima:{" "}
-                {r.next_run_at ?? "a confirmar na plataforma"} · Consumo
-                registrado: {r.consumption}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {r.activation_steps}
-              </p>
-              <p className="text-xs">
-                Pausa/retomada e execução única de rotinas externas devem
-                ocorrer na plataforma de origem até haver mecanismo de
-                atualização verificado.
-              </p>
-            </article>
-          ))}
-        </div>
-      )}
-      {tab === "Conexões" && (
-        <div className="space-y-4">
-          {s.connections.map((c) => (
-            <article
-              className="glass space-y-2 rounded-xl p-4"
-              key={c.provider}
-            >
-              <h2 className="font-medium">
-                {c.provider} · {label(c.status)}
-              </h2>
-              <p className="text-xs text-lilac">
-                Capacidades testadas: {c.capabilities.join(", ") || "nenhuma"}
-              </p>
-              <p className="text-xs">
-                Último sucesso: {c.last_success_at ?? "não comprovado"}
-              </p>
-              <p className="text-sm text-muted-foreground">
-                {c.activation_steps}
-              </p>
-            </article>
-          ))}
-          <form
-            className="glass space-y-3 rounded-xl p-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              const f = new FormData(e.currentTarget);
-              run(async () => {
-                const r = await createClientAction({
-                  name: f.get("name"),
-                  agent_id: f.get("agent_id"),
-                  areas: f.getAll("areas"),
-                  execute: f.get("execute") === "on",
-                });
-                if (r.ok) setToken(r.data.token);
-                else toast.error(r.error);
-              });
-            }}
-          >
-            <h2 className="font-medium">Conceder acesso limitado</h2>
-            <Input
-              required
-              name="name"
-              placeholder="Nome desta conexão"
-              aria-label="Nome da conexão"
-            />
-            <select
-              required
-              name="agent_id"
-              aria-label="Agente da conexão"
-              className="w-full rounded-lg border bg-background p-2"
-            >
-              {s.agents
-                .filter(
-                  (a) =>
-                    [
-                      "grok",
-                      "claude",
-                      "chatgpt",
-                      "codex",
-                      "cursor",
-                      "opencode",
-                    ].includes(a.platform) &&
-                    (a.platform !== "grok" || a.handle === "clara"),
-                )
-                .map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.name}
-                  </option>
-                ))}
-            </select>
-            <fieldset className="flex flex-wrap gap-3">
-              <legend className="mb-2 text-sm">
-                Áreas permitidas (nenhuma selecionada por padrão)
-              </legend>
-              {areas.map((a) => (
-                <label key={a.id} className="text-xs">
-                  <input type="checkbox" name="areas" value={a.id} /> {a.name}
-                </label>
-              ))}
-            </fieldset>
-            <label className="block text-sm">
-              <input type="checkbox" name="execute" /> Permitir assumir
-              trabalhos dessas áreas
-            </label>
-            <p className="text-xs text-muted-foreground">
-              Somente Clara recebe conexão Grok. Os demais bots trabalham por
-              ela. Notas privadas e finanças continuam fora do acesso. O token
-              expira em 90 dias e pode ser revogado.
-            </p>
-            <Button disabled={pending || s.demo}>Gerar token uma vez</Button>
-          </form>
-          {token && (
-            <div className="glass rounded-xl p-4">
-              <label className="text-sm">
-                Token novo — copie diretamente para o segredo da plataforma
-                <Input
-                  type="password"
-                  readOnly
-                  value={token}
-                  onFocus={(e) => e.target.select()}
-                />
-              </label>
-              <Button
-                variant="ghost"
-                onClick={() => {
-                  void navigator.clipboard.writeText(token);
-                  toast.success(
-                    "Copiado para configurar o destino autorizado.",
-                  );
-                }}
-              >
-                Copiar
-              </Button>
-              <Button variant="ghost" onClick={() => setToken(null)}>
-                Ocultar e descartar
-              </Button>
-            </div>
-          )}
-          {s.clients.map((c) => (
-            <div
-              key={c.id}
-              className="glass flex flex-wrap items-center gap-3 rounded-xl p-3"
-            >
-              <span className="text-sm">
-                {c.name} · {c.token_prefix}… ·{" "}
-                {c.revoked_at ? "Revogado" : "Criado; confira validade"}
-              </span>
-              {!c.revoked_at && (
-                <Button
-                  variant="ghost"
-                  size="xs"
-                  disabled={pending}
-                  onClick={() => execute(() => revokeClientAction(c.id))}
-                >
-                  Revogar
-                </Button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
-      {tab === "Entregas" && (
-        <div className="space-y-3">
-          {s.artifacts.map((a) => (
-            <article className="glass rounded-xl p-4" key={a.id}>
-              <a
-                className="text-lilac"
-                href={`/api/files/${a.id}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                {a.name}
-              </a>
-              <p className="text-xs text-muted-foreground">{a.mime}</p>
-              {a.entry_id && (
-                <Link
-                  className="text-xs text-lilac"
-                  href={`/registros/${a.entry_id}`}
-                >
-                  Trabalho relacionado
-                </Link>
-              )}
-            </article>
-          ))}
-          {!s.artifacts.length && (
-            <p className="text-sm text-muted-foreground">
-              Nenhuma entrega anexada. Caminho local e mensagem de intenção não
-              contam como entrega acessível.
-            </p>
-          )}
-        </div>
-      )}
-      {tab === "Aprovações" && (
-        <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">
-            Clara apresenta as propostas Grok. Confira conteúdo, destino e
-            anexos antes de selecionar cada peça. O ok vale somente para esta
-            versão.
-          </p>
-          {selectedApprovals.length > 0 && (
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm">
-                {selectedApprovals.length} peças selecionadas
-              </span>
-              {[true, false].map((approve) => (
-                <Button
-                  key={String(approve)}
-                  variant={approve ? "default" : "outline"}
-                  disabled={pending}
-                  onClick={() =>
-                    execute(async () => {
-                      const r = await decideApprovalsAction({
-                        items: s.approvals
-                          .filter((a) => selectedApprovals.includes(a.id))
-                          .map((a) => ({
-                            id: a.id,
-                            payload_hash: a.payload_hash,
-                          })),
-                        approve,
-                      });
-                      if (r.ok) setSelectedApprovals([]);
-                      return r;
-                    })
-                  }
-                >
-                  {approve ? "Aprovar selecionadas" : "Rejeitar selecionadas"}
-                </Button>
-              ))}
-            </div>
-          )}
-          {s.approvals.map((a) => (
-            <article key={a.id} className="glass space-y-3 rounded-xl p-4">
-              {a.status === "pending" && (
-                <label className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    checked={selectedApprovals.includes(a.id)}
-                    disabled={
-                      pending ||
-                      (!selectedApprovals.includes(a.id) &&
-                        selectedApprovals.length >= 20)
-                    }
-                    onChange={(e) =>
-                      setSelectedApprovals((ids) =>
-                        e.target.checked
-                          ? [...ids, a.id]
-                          : ids.filter((id) => id !== a.id),
-                      )
-                    }
-                  />
-                  Revisei esta peça e quero incluí-la na seleção
-                </label>
-              )}
-              <p>
-                {a.payload_ref.action} · {label(a.status)}
-              </p>
-              <p className="break-words text-sm">
-                Conta: {a.payload_ref.account} · Destino: {a.target}
-              </p>
-              <p className="whitespace-pre-wrap break-words text-sm">
-                {a.payload_ref.body}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {a.payload_ref.attachments.length} anexos/versões · Válida até{" "}
-                {new Date(a.expires_at).toLocaleString("pt-BR", {
-                  timeZone: "America/Sao_Paulo",
-                })}
-              </p>
-              {a.status === "pending" && (
-                <div className="flex gap-2">
-                  <Button
-                    disabled={pending}
-                    onClick={() =>
-                      execute(() =>
-                        decideApprovalAction({
-                          id: a.id,
-                          payload_hash: a.payload_hash,
-                          approve: true,
-                        }),
-                      )
-                    }
-                  >
-                    Aprovar este conteúdo
-                  </Button>
-                  <Button
-                    variant="outline"
-                    disabled={pending}
-                    onClick={() =>
-                      execute(() =>
-                        decideApprovalAction({
-                          id: a.id,
-                          payload_hash: a.payload_hash,
-                          approve: false,
-                        }),
-                      )
-                    }
-                  >
-                    Rejeitar
-                  </Button>
-                </div>
-              )}
-            </article>
-          ))}
-          {!s.approvals.length && (
-            <p className="text-sm text-muted-foreground">
-              Nenhuma proposta aguardando revisão. Aprovar não comprova envio.
-            </p>
-          )}
-        </div>
-      )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

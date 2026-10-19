@@ -15,9 +15,22 @@ import {
 } from "@/lib/notify/preferences";
 import { Button } from "@/components/ui/button";
 import { PushToggle } from "./push-toggle";
+import { Bell, Settings2, CheckCheck } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { FieldSelect } from "@/components/ui/field-select";
+import { EmptyState } from "@/components/ui/empty-state";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { noticePath } from "@/lib/central/links";
 
 export function NotificationInbox() {
   const [items, setItems] = useState<InboxNotice[]>([]),
+    [settings, setSettings] = useState(false),
     [prefs, setPrefs] = useState<NotificationPreferences>(DEFAULT_PREFERENCES),
     [error, setError] = useState(""),
     [loading, setLoading] = useState(true),
@@ -52,7 +65,19 @@ export function NotificationInbox() {
   }
   return (
     <div className="space-y-5">
-      <section className="glass space-y-3 rounded-2xl p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          {items.filter((n) => !n.read_at).length} novos avisos
+        </p>
+        <Button
+          variant="outline"
+          className="h-10"
+          onClick={() => setSettings(true)}
+        >
+          <Settings2 /> Preferências
+        </Button>
+      </div>
+      <section className="glass space-y-3 rounded-2xl p-4 sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-medium">Seus avisos</h2>
           <Button
@@ -68,16 +93,17 @@ export function NotificationInbox() {
               )
             }
           >
-            Marcar estes como lidos
+            <CheckCheck /> Marcar como lidos
           </Button>
         </div>
         {loading && <p role="status">Carregando avisos…</p>}
         {error && <p role="alert">{error}</p>}
         {!loading && !error && !items.length && (
-          <p className="text-sm text-muted-foreground">
-            Nenhum aviso por enquanto. Lembretes, prazos e pedidos de aprovação
-            aparecem aqui.
-          </p>
+          <EmptyState
+            icon={Bell}
+            title="Tudo em dia"
+            description="Seus lembretes, entregas e aprovações aparecem aqui."
+          />
         )}
         {items.map((n) => (
           <article
@@ -86,15 +112,11 @@ export function NotificationInbox() {
           >
             <div className="flex items-start justify-between gap-3">
               <Link
-                href={
-                  n.path.startsWith("/") && !n.path.startsWith("//")
-                    ? n.path
-                    : "/notificacoes"
-                }
+                href={noticePath(n)}
                 onClick={() => {
                   if (!n.read_at) mark([n.id]);
                 }}
-                className="min-w-0"
+                className="min-w-0 flex-1 rounded-lg focus-visible:outline-2 focus-visible:outline-ring"
               >
                 <p className="font-medium">{n.title}</p>
                 <p className="mt-1 break-words text-sm text-muted-foreground">
@@ -146,127 +168,137 @@ export function NotificationInbox() {
           </Button>
         )}
       </section>
-      <form
-        className="glass space-y-4 rounded-2xl p-4"
-        onSubmit={(e) => {
-          e.preventDefault();
-          run(async () => {
-            const r = await saveNotificationPreferencesAction(prefs);
-            if (r.ok) toast.success("Preferências salvas.");
-            else toast.error(r.error);
-          });
-        }}
-      >
-        <h2 className="font-medium">O que você quer receber</h2>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={prefs.in_app}
-            onChange={(e) => setPrefs({ ...prefs, in_app: e.target.checked })}
-          />
-          Guardar novos avisos na Central
-        </label>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {Object.entries(NOTICE_LABELS).map(([key, label]) => (
-            <label key={key} className="flex items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={prefs.kinds.includes(
-                  key as keyof typeof NOTICE_LABELS,
-                )}
-                onChange={(e) =>
-                  setPrefs({
-                    ...prefs,
-                    kinds: e.target.checked
-                      ? [...prefs.kinds, key as keyof typeof NOTICE_LABELS]
-                      : prefs.kinds.filter((k) => k !== key),
-                  })
+      <Dialog open={settings} onOpenChange={setSettings}>
+        <DialogContent className="max-h-[85dvh] overflow-y-auto sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>Preferências de avisos</DialogTitle>
+            <DialogDescription>
+              Escolha o que receber e quando.
+            </DialogDescription>
+          </DialogHeader>
+          <form
+            className="glass space-y-4 rounded-2xl p-4"
+            onSubmit={(e) => {
+              e.preventDefault();
+              run(async () => {
+                const r = await saveNotificationPreferencesAction(prefs);
+                if (r.ok) toast.success("Preferências salvas.");
+                else toast.error(r.error);
+              });
+            }}
+          >
+            <h2 className="font-medium">Na Central</h2>
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                checked={prefs.in_app}
+                onCheckedChange={(checked) =>
+                  setPrefs({ ...prefs, in_app: checked === true })
                 }
               />
-              {label}
+              Guardar novos avisos na Central
             </label>
-          ))}
-        </div>
-        <div className="flex flex-wrap gap-3 text-sm">
-          <label>
-            Silêncio das{" "}
-            <select
-              aria-label="Início do silêncio"
-              className="rounded border bg-background p-2"
-              value={prefs.quiet_start}
-              onChange={(e) =>
-                setPrefs({ ...prefs, quiet_start: Number(e.target.value) })
-              }
-            >
-              {Array.from({ length: 24 }, (_, h) => (
-                <option key={h} value={h}>
-                  {h}h
-                </option>
+            <div className="grid gap-2 sm:grid-cols-2">
+              {Object.entries(NOTICE_LABELS).map(([key, label]) => (
+                <label
+                  key={key}
+                  className="flex min-h-10 cursor-pointer items-center gap-3 rounded-lg border px-3 py-2 text-sm"
+                >
+                  <Checkbox
+                    checked={prefs.kinds.includes(
+                      key as keyof typeof NOTICE_LABELS,
+                    )}
+                    onCheckedChange={(checked) =>
+                      setPrefs({
+                        ...prefs,
+                        kinds:
+                          checked === true
+                            ? [
+                                ...prefs.kinds,
+                                key as keyof typeof NOTICE_LABELS,
+                              ]
+                            : prefs.kinds.filter((k) => k !== key),
+                      })
+                    }
+                  />
+                  {label}
+                </label>
               ))}
-            </select>
-          </label>
-          <label>
-            até{" "}
-            <select
-              aria-label="Fim do silêncio"
-              className="rounded border bg-background p-2"
-              value={prefs.quiet_end}
-              onChange={(e) =>
-                setPrefs({ ...prefs, quiet_end: Number(e.target.value) })
-              }
-            >
-              {Array.from({ length: 24 }, (_, h) => (
-                <option key={h} value={h}>
-                  {h}h
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Avisar antes do prazo{" "}
-            <select
-              className="rounded border bg-background p-2"
-              value={prefs.lead_minutes}
-              onChange={(e) =>
-                setPrefs({
-                  ...prefs,
-                  lead_minutes: Number(
-                    e.target.value,
-                  ) as NotificationPreferences["lead_minutes"],
-                })
-              }
-            >
-              {[15, 30, 60, 180, 1440].map((m) => (
-                <option key={m} value={m}>
-                  {m < 60 ? `${m} min` : `${m / 60} h`}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Horários de Brasília. Horas iguais desativam o silêncio. O aviso fica
-          na Central durante o silêncio; o push aguarda. Verificação a cada
-          cinco minutos.
-        </p>
-        <label className="flex items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            checked={prefs.push}
-            onChange={(e) => setPrefs({ ...prefs, push: e.target.checked })}
-          />
-          Permitir push nos aparelhos cadastrados
-        </label>
-        <Button disabled={pending || loading}>Salvar preferências</Button>
-      </form>
-      <section className="glass space-y-3 rounded-2xl p-4">
-        <h2 className="font-medium">Este aparelho</h2>
-        <p className="text-sm text-muted-foreground">
-          Push é opcional. O texto na tela bloqueada é discreto; os detalhes
-          ficam dentro da Central. Ative também a permissão no aparelho.
-        </p>
-        <PushToggle />
-      </section>
+            </div>
+            <div className="grid gap-3 text-sm sm:grid-cols-3">
+              <label>
+                Silêncio das{" "}
+                <FieldSelect
+                  label="Início do silêncio"
+                  value={String(prefs.quiet_start)}
+                  onValueChange={(v) =>
+                    setPrefs({ ...prefs, quiet_start: Number(v) })
+                  }
+                  options={Array.from({ length: 24 }, (_, h) => ({
+                    value: String(h),
+                    label: `${h}h`,
+                  }))}
+                />
+              </label>
+              <label>
+                até{" "}
+                <FieldSelect
+                  label="Fim do silêncio"
+                  value={String(prefs.quiet_end)}
+                  onValueChange={(v) =>
+                    setPrefs({ ...prefs, quiet_end: Number(v) })
+                  }
+                  options={Array.from({ length: 24 }, (_, h) => ({
+                    value: String(h),
+                    label: `${h}h`,
+                  }))}
+                />
+              </label>
+              <label>
+                Avisar antes do prazo{" "}
+                <FieldSelect
+                  label="Antecedência do aviso"
+                  value={String(prefs.lead_minutes)}
+                  onValueChange={(v) =>
+                    setPrefs({
+                      ...prefs,
+                      lead_minutes: Number(
+                        v,
+                      ) as NotificationPreferences["lead_minutes"],
+                    })
+                  }
+                  options={[15, 30, 60, 180, 1440].map((m) => ({
+                    value: String(m),
+                    label: m < 60 ? `${m} min` : `${m / 60} h`,
+                  }))}
+                />
+              </label>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Horários de Brasília. Horas iguais desativam o silêncio. O aviso
+              fica na Central durante o silêncio; o push aguarda. Verificação a
+              cada cinco minutos.
+            </p>
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox
+                checked={prefs.push}
+                onCheckedChange={(checked) =>
+                  setPrefs({ ...prefs, push: checked === true })
+                }
+              />
+              Permitir push nos aparelhos cadastrados
+            </label>
+            <Button disabled={pending || loading}>Salvar preferências</Button>
+          </form>
+          <section className="glass space-y-3 rounded-2xl p-4">
+            <h2 className="font-medium">Este aparelho</h2>
+            <p className="text-sm text-muted-foreground">
+              Push é opcional. O texto na tela bloqueada é discreto; os detalhes
+              ficam dentro da Central. Ative também a permissão no aparelho.
+            </p>
+            <PushToggle />
+          </section>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

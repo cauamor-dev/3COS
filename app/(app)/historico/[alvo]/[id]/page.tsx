@@ -31,7 +31,7 @@ async function HistoryContent({ params }: { params: Params }) {
     const entry = await central.getEntry(id);
     return {
       title: entry.title,
-      backHref: `/areas/${entry.area.slug}#${entry.id}`,
+      backHref: `/registros/${entry.id}`,
       current: { title: entry.title, content: entry.content_md },
       versions: await central.versions("entries", entry.id),
     };

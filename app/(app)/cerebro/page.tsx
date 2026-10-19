@@ -19,7 +19,7 @@ export default function BrainPage() {
       <PageHeader
         eyebrow="cérebro"
         title="Tudo conectado"
-        description="Áreas são os nós grandes; registros orbitam suas áreas e se ligam por tags. Nós brilham conforme a atividade recente."
+        description="Explore suas áreas, registros e conexões."
         className="md:mb-5"
       />
       <Suspense fallback={<div className="h-[calc(100dvh-13rem)] min-h-[420px] animate-pulse rounded-2xl bg-white/5" />}>

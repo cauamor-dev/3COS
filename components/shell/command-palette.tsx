@@ -82,7 +82,7 @@ export function CommandPalette() {
               <Search /> Buscar “{query}” em tudo
             </CommandItem>
             {visibleResults.map((entry) => (
-              <CommandItem key={entry.id} value={`registro ${entry.id} ${query}`} onSelect={() => go(`/areas/${entry.area.slug}#${entry.id}`)}>
+              <CommandItem key={entry.id} value={`registro ${entry.id} ${query}`} onSelect={() => go(`/registros/${entry.id}`)}>
                 <FileText />
                 <span className="truncate">{entry.title}</span>
                 <CommandShortcut>{entry.area.slug}</CommandShortcut>

@@ -3,9 +3,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { teamFor } from "./server";
 import type { ActorContext } from "@/lib/central/access";
 import type { TeamSnapshot } from "./types";
+import { demoTeamSnapshot } from "./demo-snapshot";
+import { z } from "zod";
 export async function teamSnapshot(
   actor: ActorContext,
   demo = false,
+  focusWork?: string,
 ): Promise<TeamSnapshot> {
   const empty: TeamSnapshot = {
     agents: [],
@@ -19,12 +22,7 @@ export async function teamSnapshot(
     clients: [],
     demo,
   };
-  if (demo)
-    return {
-      ...empty,
-      error:
-        "Demonstração sem conexões ou execuções externas. Os dados reais aparecem após login.",
-    };
+  if (demo) return demoTeamSnapshot(empty);
   try {
     const db = createAdminClient();
     const s = teamFor(actor);
@@ -93,6 +91,27 @@ export async function teamSnapshot(
         error:
           "Equipe aguardando migrações ou conexão com o banco. A captura de notas permanece disponível.",
       };
+    const focus = z.uuid().safeParse(focusWork);
+    if (focus.success) {
+      const focused = await s.queue(focus.data);
+      if (focused.length) {
+        if (!works.some((w) => w.entry_id === focus.data))
+          works.push(...focused);
+        const extra = await db
+          .from("action_approvals")
+          .select(
+            "id,entry_id,status,target,payload_hash,payload_ref,expires_at",
+          )
+          .eq("entry_id", focus.data)
+          .order("created_at", { ascending: false })
+          .limit(50);
+        if (extra.error)
+          throw new Error("Não foi possível carregar a aprovação solicitada.");
+        for (const approval of extra.data ?? [])
+          if (!approvals.data?.some((a) => a.id === approval.id))
+            approvals.data?.push(approval);
+      }
+    }
     return {
       ...empty,
       agents: agents.data ?? [],

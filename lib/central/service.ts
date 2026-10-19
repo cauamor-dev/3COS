@@ -183,7 +183,7 @@ function reminderNotice(entry: Entry): Notice {
 }
 
 function reminderText(entry: Entry): Notice {
-  const path = `/areas/${entry.area.slug}#${entry.id}`;
+  const path = `/registros/${entry.id}`;
   const agent = AGENT_NAME[entry.source];
   if (agent && (entry.priority === "alta" || entry.tags.includes("alerta")) && entry.type !== "evento") {
     // Urgent findings from Vega/Nox (scheduled by the entries_alerta_ia trigger).
