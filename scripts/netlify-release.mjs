@@ -67,10 +67,11 @@ if(action==="cloud-preview" || action==="cloud-production"){
   zip.file(file,await fs.readFile(file));
  }
  const archive=await zip.generateAsync({type:'nodebuffer',compression:'DEFLATE'});
- const branch=action==='cloud-production'?'main':'codex-evolution-preview';
- const response=await fetch(`https://api.netlify.com/api/v1/sites/${site.id}/builds?branch=${branch}&title=3C%20OS%20validated%20source`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/zip'},body:archive});
+ const query=new URLSearchParams({title:'3C OS validated source'});
+ if(action==='cloud-preview')query.set('branch','codex-evolution-preview');
+ const response=await fetch(`https://api.netlify.com/api/v1/sites/${site.id}/builds?${query}`,{method:'POST',headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/zip'},body:archive});
  if(!response.ok)throw new Error(`Build remoto não iniciado (${response.status}); sem mudança no Painel Axial.`);
- const receipt=await response.json();await fs.mkdir('.local-reports',{recursive:true});await fs.writeFile('.local-reports/netlify-build.json',JSON.stringify({id:receipt.id,deploy_id:receipt.deploy_id,site_id:site.id}));
+ const receipt=await response.json();await fs.mkdir('.local-reports',{recursive:true});await fs.writeFile('.local-reports/netlify-build.json',JSON.stringify({id:receipt.id,deploy_id:receipt.deploy_id,site_id:site.id,expected_context:action==='cloud-production'?'production':'branch-deploy'}));
  console.log(JSON.stringify({queued:true,build_id:receipt.id,deploy_id:receipt.deploy_id,source_files:files.length,source_bytes:archive.length}));process.exit(0);
 }
 if(action==='cloud-status'||action==='promote'){
@@ -79,7 +80,7 @@ if(action==='cloud-status'||action==='promote'){
   if(process.env.CENTRAL_RELEASE_VALIDATED!=='1')throw new Error('Preview e recuperação precisam estar validados.');
   const published=await api(`sites/${site.id}/deploys/${r.deploy_id}/restore`,'POST');console.log(JSON.stringify({published:true,url:published.ssl_url,deploy:published.id}));process.exit(0);
  }
- const deploy=await api(`sites/${site.id}/deploys/${r.deploy_id}`);console.log(JSON.stringify({id:deploy.id,state:deploy.state,url:deploy.deploy_ssl_url,error:deploy.error_message,context:deploy.context}));process.exit(0);
+ const deploy=await api(`sites/${site.id}/deploys/${r.deploy_id}`);console.log(JSON.stringify({id:deploy.id,state:deploy.state,url:deploy.deploy_ssl_url,error:deploy.error_message,context:deploy.context,expected_context:r.expected_context}));if(r.expected_context&&deploy.context!==r.expected_context)throw new Error('Contexto de deploy diferente do solicitado. Não promover.');process.exit(0);
 }
 if (action === "prepare") {
   process.loadEnvFile(".env.local");
