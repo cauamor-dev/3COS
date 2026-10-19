@@ -1,5 +1,10 @@
 import { z } from "zod";
 export const WORKFLOWS = {
+  ai_delivery: {
+    version: 1,
+    executor: "cursor",
+    next: "Nox: ideia → Vega: especificação → Cursor: implementação → Vega: revisão e testes → Nox e Cauã: validação. Passagens assistidas com evidências na Central.",
+  },
   message_delivery: {
     version: 1,
     executor: "clara",

@@ -90,7 +90,9 @@ export function TeamView({
     [workOpen, setWorkOpen] = useState(false),
     [threadOpen, setThreadOpen] = useState(false),
     [threadWork, setThreadWork] = useState<string | null>(null),
-    [clientOpen, setClientOpen] = useState(focusConnect === "clara"),
+    [clientOpen, setClientOpen] = useState(
+      focusConnect === "clara" || focusConnect === "cursor",
+    ),
     [draft, setDraft] = useState(""),
     [token, setToken] = useState<string | null>(null);
   const [pending, run] = useTransition();
@@ -591,7 +593,11 @@ export function TeamView({
         }}
       />
       <ClientDialog
-        preset={focusConnect === "clara" ? "clara" : undefined}
+        preset={
+          focusConnect === "clara" || focusConnect === "cursor"
+            ? focusConnect
+            : undefined
+        }
         s={s}
         open={clientOpen}
         onOpenChange={setClientOpen}

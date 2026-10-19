@@ -1,0 +1,10 @@
+.env*
+!.env.example
+.private-backups/
+.local-reports/
+.netlify/
+.vercel/
+node_modules/
+.next/
+coverage/
+*.pem

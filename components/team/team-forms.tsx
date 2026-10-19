@@ -63,6 +63,7 @@ function FormDialog({
   );
 }
 const workflowLabels: Record<keyof typeof WORKFLOWS, string> = {
+  ai_delivery: "Ideia → implementação → revisão",
   message_delivery: "Responder uma conversa",
   capture: "Organizar uma anotação",
   career_review: "Revisar carreira",
@@ -316,7 +317,7 @@ export function ClientDialog({
   onOpenChange,
   onToken,
 }: {
-  preset?: "clara";
+  preset?: "clara" | "cursor";
   s: TeamSnapshot;
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -329,7 +330,8 @@ export function ClientDialog({
       ["grok", "claude", "chatgpt", "codex", "cursor", "opencode"].includes(
         a.platform,
       ) &&
-      (a.platform !== "grok" || a.handle === "clara") && (!preset || a.handle === preset),
+      (a.platform !== "grok" || a.handle === "clara") &&
+      (!preset || a.handle === preset),
   );
   const [selected, setSelected] = useState<string[]>([]);
   return (
@@ -364,7 +366,13 @@ export function ClientDialog({
             aria-label="Nome da conexão"
             required
             placeholder="Ex.: Clara no Grok Bot"
-            defaultValue={preset ? "Clara no Grok Bot" : undefined}
+            defaultValue={
+              preset === "cursor"
+                ? "Cursor · desenvolvimento"
+                : preset === "clara"
+                  ? "Clara no Grok Bot"
+                  : undefined
+            }
             className="h-10"
           />
         </FormField>

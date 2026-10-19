@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "central-3c": {
+      "url": "https://central3c-caua.netlify.app/api/mcp",
+      "headers": { "Authorization": "Bearer ${env:CENTRAL_3C_CURSOR_TOKEN}" }
+    }
+  }
+}

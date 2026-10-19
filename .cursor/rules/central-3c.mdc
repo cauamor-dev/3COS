@@ -1,0 +1,13 @@
+---
+description: Identidade, continuidade e limites da Central 3C
+alwaysApply: true
+---
+
+Leia AGENTS.md, CLAUDE.md e docs/CONTINUAR-NO-CURSOR.md antes de alterar o projeto.
+Responda em português. Preserve a identidade preto/branco/roxo e os componentes existentes.
+Use a identidade Cursor no MCP central-3c; não se apresente como Nox, Vega, Clara ou Cauã.
+Não leia nem copie .env.local, backups, relatórios privados, senhas, tokens ou notas privadas para o chat.
+Não contorne .cursorignore com terminal. Ele reduz indexação, mas não é uma barreira de segurança.
+Nenhum gasto novo, Cloud Agent pago, upgrade, recarga ou API paga. Efeitos externos exigem ok do Cauã.
+Somente Clara é ponte dos Grok Bots. Não distribuir o token dela a outros bots.
+Não confundir cadastro, configuração, teste real e conexão comprovada. Relate limitações com precisão.

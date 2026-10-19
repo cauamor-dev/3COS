@@ -38,6 +38,7 @@ async function Connections() {
       </section>
       <section className="glass space-y-2 rounded-2xl p-5 lg:col-span-2">
         <h2 className="font-medium">Conexões individuais da Equipe</h2>
+        <Link className="inline-flex min-h-10 items-center text-sm text-lilac" href="/conexoes/cursor">Conectar o Cursor →</Link>
         <p className="text-sm text-muted-foreground">
           Crie um token por agente com áreas e operações delimitadas. Conexões
           antigas continuam durante a migração, com identidade fixa; query

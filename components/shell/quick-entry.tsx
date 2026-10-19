@@ -4,21 +4,55 @@ import { Loader2, Plus } from "lucide-react";
 import { useState, useTransition } from "react";
 import { toast } from "sonner";
 import { saveEntryAction } from "@/app/(app)/actions";
-import { fromLocalInput, REMINDER_OPTIONS, reminderFrom } from "@/components/central/dates";
+import {
+  fromLocalInput,
+  REMINDER_OPTIONS,
+  reminderFrom,
+} from "@/components/central/dates";
 import { TYPE_LABEL } from "@/components/central/labels";
 import { useCentral } from "@/components/providers/central-provider";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
-import { AttachmentPicker, attachmentFields, useAttachments } from "@/components/central/attachments";
+import {
+  AttachmentPicker,
+  attachmentFields,
+  useAttachments,
+} from "@/components/central/attachments";
 import { cn } from "cn";
-import { RECURRENCES, type EntryType, type Recurrence, type SaveEntryInput } from "@/lib/central/schemas";
+import {
+  RECURRENCES,
+  type EntryType,
+  type Recurrence,
+  type SaveEntryInput,
+} from "@/lib/central/schemas";
 
-const TYPE_ORDER: EntryType[] = ["tarefa", "evento", "nota", "ideia", "decisao", "progresso", "contexto", "post"];
+const TYPE_ORDER: EntryType[] = [
+  "tarefa",
+  "evento",
+  "nota",
+  "ideia",
+  "decisao",
+  "progresso",
+  "contexto",
+  "post",
+];
 
 const NEW_AREA = "__nova__";
 const RECURRENCE_LABEL: Record<Recurrence, string> = {
@@ -32,11 +66,16 @@ export function QuickEntry() {
   const { quickEntry, closeQuickEntry } = useCentral();
 
   return (
-    <Dialog open={quickEntry.open} onOpenChange={(open) => !open && closeQuickEntry()}>
+    <Dialog
+      open={quickEntry.open}
+      onOpenChange={(open) => !open && closeQuickEntry()}
+    >
       <DialogContent className="glass max-h-[88dvh] overflow-y-auto max-sm:top-auto max-sm:bottom-0 max-sm:max-w-full max-sm:translate-y-0 max-sm:rounded-b-none max-sm:pb-[max(1rem,env(safe-area-inset-bottom))] sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>Novo registro</DialogTitle>
-          <DialogDescription>Fica visível na hora para Claude e ChatGPT.</DialogDescription>
+          <DialogDescription>
+            Organize uma ideia, tarefa ou informação.
+          </DialogDescription>
         </DialogHeader>
         <QuickEntryForm
           initialArea={quickEntry.areaSlug ?? "inbox"}
@@ -87,7 +126,10 @@ function QuickEntryForm({
         dia_inteiro: allDay,
         local: location || undefined,
         recorrencia: recurrence === "none" ? undefined : recurrence,
-        lembrar_em: reminderFrom(allDay ? fromLocalInput(`${start.slice(0, 10)}T09:00`) : startIso, reminder),
+        lembrar_em: reminderFrom(
+          allDay ? fromLocalInput(`${start.slice(0, 10)}T09:00`) : startIso,
+          reminder,
+        ),
       };
     }
     if (type === "tarefa") {
@@ -103,10 +145,17 @@ function QuickEntryForm({
   }
 
   // Uploaded files join the entry: first image as highlight, every file as a link.
-  function withAttachments(input: Partial<SaveEntryInput>): Partial<SaveEntryInput> {
+  function withAttachments(
+    input: Partial<SaveEntryInput>,
+  ): Partial<SaveEntryInput> {
     if (!attachments.items.length) return input;
     const files = attachmentFields(attachments.items);
-    return { ...input, ...files, ...(input.imagem && { imagem: input.imagem }), links: [...(input.links ?? []), ...files.links] };
+    return {
+      ...input,
+      ...files,
+      ...(input.imagem && { imagem: input.imagem }),
+      links: [...(input.links ?? []), ...files.links],
+    };
   }
 
   function submit(event?: React.FormEvent) {
@@ -132,7 +181,13 @@ function QuickEntryForm({
         toast.error(result.error);
         return;
       }
-      toast.success(type === "evento" ? "Evento na agenda" : type === "tarefa" ? "Tarefa criada" : "Registro salvo");
+      toast.success(
+        type === "evento"
+          ? "Evento na agenda"
+          : type === "tarefa"
+            ? "Tarefa criada"
+            : "Registro salvo",
+      );
       onSaved();
     });
   }
@@ -146,7 +201,11 @@ function QuickEntryForm({
       }}
       className="min-w-0 space-y-4"
     >
-      <div className="no-scrollbar -mx-1 flex gap-1.5 overflow-x-auto px-1" role="radiogroup" aria-label="Tipo">
+      <div
+        className="flex flex-wrap gap-1.5"
+        role="radiogroup"
+        aria-label="Tipo"
+      >
         {TYPE_ORDER.map((value) => (
           <button
             key={value}
@@ -156,7 +215,8 @@ function QuickEntryForm({
             onClick={() => setType(value)}
             className={cn(
               "h-9 shrink-0 rounded-full border px-3.5 text-[13px] text-muted-foreground transition-colors duration-150",
-              type === value && "border-primary/60 bg-primary/20 text-foreground",
+              type === value &&
+                "border-primary/60 bg-primary/20 text-foreground",
             )}
           >
             {TYPE_LABEL[value]}
@@ -184,7 +244,13 @@ function QuickEntryForm({
       {areaSlug === NEW_AREA && (
         <div className="space-y-2">
           <Label htmlFor="qe-area">Nome da nova área</Label>
-          <Input id="qe-area" value={newAreaName} onChange={(e) => setNewAreaName(e.target.value)} placeholder="Ex.: Axial" required />
+          <Input
+            id="qe-area"
+            value={newAreaName}
+            onChange={(e) => setNewAreaName(e.target.value)}
+            placeholder="Ex.: Axial"
+            required
+          />
         </div>
       )}
       <div className="space-y-2">
@@ -193,7 +259,13 @@ function QuickEntryForm({
           id="qe-title"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder={type === "evento" ? "Ex.: Reunião com o Lott" : type === "tarefa" ? "Ex.: Enviar proposta" : "O que aconteceu?"}
+          placeholder={
+            type === "evento"
+              ? "Ex.: Reunião com o Lott"
+              : type === "tarefa"
+                ? "Ex.: Enviar proposta"
+                : "O que aconteceu?"
+          }
           required
           maxLength={200}
           autoFocus
@@ -220,13 +292,27 @@ function QuickEntryForm({
             {!allDay && (
               <div className="space-y-1.5">
                 <Label htmlFor="qe-end">Fim</Label>
-                <Input id="qe-end" type="datetime-local" value={end} onChange={(e) => setEnd(e.target.value)} />
+                <Input
+                  id="qe-end"
+                  type="datetime-local"
+                  value={end}
+                  onChange={(e) => setEnd(e.target.value)}
+                />
               </div>
             )}
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Input value={location} onChange={(e) => setLocation(e.target.value)} placeholder="Local (opcional)" />
-            <Select value={recurrence} onValueChange={(value) => setRecurrence(value as Recurrence | "none")}>
+            <Input
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              placeholder="Local (opcional)"
+            />
+            <Select
+              value={recurrence}
+              onValueChange={(value) =>
+                setRecurrence(value as Recurrence | "none")
+              }
+            >
               <SelectTrigger className="w-full" aria-label="Repetição">
                 <SelectValue />
               </SelectTrigger>
@@ -248,18 +334,32 @@ function QuickEntryForm({
         <div className="grid gap-3 rounded-lg border bg-white/[0.02] p-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label htmlFor="qe-due">Prazo (opcional)</Label>
-            <Input id="qe-due" type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} />
+            <Input
+              id="qe-due"
+              type="datetime-local"
+              value={due}
+              onChange={(e) => setDue(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label>Lembrete</Label>
-            <ReminderSelect value={reminder} onChange={setReminder} disabled={!due} />
+            <ReminderSelect
+              value={reminder}
+              onChange={setReminder}
+              disabled={!due}
+            />
           </div>
         </div>
       )}
 
       {type === "post" && (
         <div className="grid gap-3 rounded-lg border bg-white/[0.02] p-3">
-          <Input type="url" value={link} onChange={(e) => setLink(e.target.value)} placeholder="Link (opcional)" />
+          <Input
+            type="url"
+            value={link}
+            onChange={(e) => setLink(e.target.value)}
+            placeholder="Link (opcional)"
+          />
         </div>
       )}
 
@@ -276,7 +376,11 @@ function QuickEntryForm({
       <AttachmentPicker attachments={attachments} />
       <div className="flex items-center justify-between gap-3">
         <span className="label-mono hidden sm:block">ctrl + enter</span>
-        <Button type="submit" disabled={pending || attachments.busy} className="ml-auto">
+        <Button
+          type="submit"
+          disabled={pending || attachments.busy}
+          className="ml-auto"
+        >
           {pending ? <Loader2 className="animate-spin" /> : "Salvar"}
         </Button>
       </div>
@@ -284,7 +388,15 @@ function QuickEntryForm({
   );
 }
 
-function ReminderSelect({ value, onChange, disabled }: { value: string; onChange(value: string): void; disabled?: boolean }) {
+function ReminderSelect({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  onChange(value: string): void;
+  disabled?: boolean;
+}) {
   return (
     <Select value={value} onValueChange={onChange} disabled={disabled}>
       <SelectTrigger className="w-full" aria-label="Lembrete">

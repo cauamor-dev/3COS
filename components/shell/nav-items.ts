@@ -1,4 +1,21 @@
-import { Bell, Brain, CalendarDays, CheckSquare, Database, FolderKanban, Home, Newspaper, PlugZap, Search, UserRound, Users, Files, Wallet, Briefcase } from "lucide-react";
+import {
+  Bell,
+  Brain,
+  CalendarDays,
+  CheckSquare,
+  Database,
+  FolderKanban,
+  Home,
+  Newspaper,
+  PlugZap,
+  Search,
+  UserRound,
+  Users,
+  Files,
+  Wallet,
+  Briefcase,
+  ShieldCheck,
+} from "lucide-react";
 
 export const NAV_ITEMS = [
   { href: "/", label: "Início", icon: Home },
@@ -7,6 +24,7 @@ export const NAV_ITEMS = [
   { href: "/equipe", label: "Equipe", icon: Users },
   { href: "/notificacoes", label: "Notificações", icon: Bell },
   { href: "/arquivos", label: "Arquivos", icon: Files },
+  { href: "/seguro", label: "Área segura", icon: ShieldCheck },
   { href: "/carreira", label: "Carreira", icon: Briefcase },
   { href: "/financas", label: "Finanças pessoais", icon: Wallet },
   { href: "/mural", label: "Mural", icon: Newspaper },
@@ -19,5 +37,7 @@ export const NAV_ITEMS = [
 ] as const;
 
 export function isActive(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+  return href === "/"
+    ? pathname === "/"
+    : pathname === href || pathname.startsWith(`${href}/`);
 }

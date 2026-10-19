@@ -1,5 +1,7 @@
 # 3C OS: instruções para o Claude Code
 
+> Continuidade atualizada em 18/10/2026: leia `docs/CONTINUAR-NO-CURSOR.md` para o fluxo Nox → Vega → Cursor, estado real da Chloe já ativa, conexões e pendências. As listas históricas abaixo não comprovam ativação nem substituem esse estado. `docs/operations/release-recovery.md` rege o host Netlify atual; não usar promoção de branch para incorporar segredos Production-only.
+
 Leia também `AGENTS.md`: este projeto usa **Next.js 16.4**, que tem APIs diferentes do que você conhece. Consulte `node_modules/next/dist/docs/` antes de usar uma API nova.
 
 ## Quem e o quê
