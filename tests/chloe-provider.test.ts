@@ -38,18 +38,16 @@ describe("IA gratuita sem fallback pago", () => {
     vi.stubEnv("CHLOE_AI_ENABLED", "0");
     vi.stubEnv("CHLOE_EVALUATION_PASSED", "0");
     vi.stubEnv("CHLOE_EVALUATION_BUILD", "fixture-code");
-    const fetch = vi
-      .fn()
-      .mockResolvedValue(
-        Response.json({
-          choices: [
-            {
-              message: { role: "assistant", content: "Teste" },
-              finish_reason: "stop",
-            },
-          ],
-        }),
-      );
+    const fetch = vi.fn().mockResolvedValue(
+      Response.json({
+        choices: [
+          {
+            message: { role: "assistant", content: "Teste" },
+            finish_reason: "stop",
+          },
+        ],
+      }),
+    );
     vi.stubGlobal("fetch", fetch);
     await evaluationChat("openai/gpt-oss-20b")(request);
     expect(chloeAvailable()).toBe(false);
@@ -103,7 +101,10 @@ describe("IA gratuita sem fallback pago", () => {
     expect(rpc.mock.calls.filter((c) => c[0] === "settle_usage")).toHaveLength(
       1,
     );
-    expect(rpc.mock.calls.at(-1)?.[1]).toMatchObject({ p_failed: true });
+    expect(rpc.mock.calls.at(-1)?.[1]).toMatchObject({
+      p_failed: true,
+      p_used: 0,
+    });
   });
   it("reserva antes da chamada e liquida consumo real uma vez", async () => {
     const fetch = vi.fn().mockResolvedValue(

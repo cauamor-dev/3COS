@@ -7,6 +7,7 @@ export interface EvaluationCase {
   id: string;
   request: string;
   tool: string;
+  alternativeTools?: readonly string[];
   readOnly?: boolean;
   critical?: boolean;
   long?: boolean;
@@ -75,7 +76,9 @@ export async function evaluateCase(c: EvaluationCase, provider: ChatFn) {
         ? "nota"
         : "tarefa";
   const checks = {
-    expected_tool: tools.includes(c.tool),
+    expected_tool: [c.tool, ...(c.alternativeTools ?? [])].some((t) =>
+      tools.includes(t),
+    ),
     write_effect:
       !c.tool.startsWith("criar_") || created.some((e) => e.type === type),
     read_only:

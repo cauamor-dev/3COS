@@ -224,6 +224,8 @@ async function callProvider(
       signal: AbortSignal.timeout(18000),
     });
     if (!response.ok) {
+      // Explicit rate/auth rejection did not run inference; unknown outcomes stay conservative.
+      if ([401, 403, 429].includes(response.status)) used = 0;
       const retry = Number(response.headers.get("retry-after"));
       throw new ChloeProviderError(
         response.status === 429

@@ -79,6 +79,7 @@ export const EVALUATION_CASES = [
     id: "E14",
     request: "Só pergunto: existe uma tarefa sobre reunião?",
     tool: "buscar_memoria",
+    alternativeTools: ["listar_tarefas"],
     readOnly: true,
     critical: true,
   },
