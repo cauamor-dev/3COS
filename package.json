@@ -21,7 +21,12 @@
     "runner:inspect": "node scripts/runner.mjs inspect",
     "runner:once": "node scripts/runner.mjs once",
     "backup:private": "node --env-file=.env.local scripts/backup-private.mjs",
-    "chloe:evaluate": "node --conditions=react-server --env-file=.env.local --import tsx scripts/evaluate-chloe.mts"
+    "chloe:evaluate": "node --conditions=react-server --env-file=.env.local --import tsx scripts/evaluate-chloe.mts",
+    "ai:status": "node scripts/chloe-setup.mjs inspect",
+    "ai:prepare": "node scripts/chloe-setup.mjs prepare",
+    "ai:evaluate": "node scripts/chloe-setup.mjs evaluate",
+    "ai:activate": "node scripts/chloe-setup.mjs activate",
+    "clara:prepare": "node --conditions=react-server --env-file=.env.local --import tsx scripts/prepare-clara.mts"
   },
   "dependencies": {
     "@modelcontextprotocol/server": "^2.3.1",

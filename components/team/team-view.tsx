@@ -69,10 +69,12 @@ export function TeamView({
   snapshot: s,
   focusWork,
   focusTab,
+  focusConnect,
 }: {
   snapshot: TeamSnapshot;
   focusWork?: string;
   focusTab?: string;
+  focusConnect?: string;
 }) {
   const { areas } = useCentral();
   const [tab, setTab] = useState(
@@ -88,7 +90,7 @@ export function TeamView({
     [workOpen, setWorkOpen] = useState(false),
     [threadOpen, setThreadOpen] = useState(false),
     [threadWork, setThreadWork] = useState<string | null>(null),
-    [clientOpen, setClientOpen] = useState(false),
+    [clientOpen, setClientOpen] = useState(focusConnect === "clara"),
     [draft, setDraft] = useState(""),
     [token, setToken] = useState<string | null>(null);
   const [pending, run] = useTransition();
@@ -589,6 +591,7 @@ export function TeamView({
         }}
       />
       <ClientDialog
+        preset={focusConnect === "clara" ? "clara" : undefined}
         s={s}
         open={clientOpen}
         onOpenChange={setClientOpen}

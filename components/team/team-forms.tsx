@@ -310,11 +310,13 @@ export function ThreadDialog({
   );
 }
 export function ClientDialog({
+  preset,
   s,
   open,
   onOpenChange,
   onToken,
 }: {
+  preset?: "clara";
   s: TeamSnapshot;
   open: boolean;
   onOpenChange: (v: boolean) => void;
@@ -327,7 +329,7 @@ export function ClientDialog({
       ["grok", "claude", "chatgpt", "codex", "cursor", "opencode"].includes(
         a.platform,
       ) &&
-      (a.platform !== "grok" || a.handle === "clara"),
+      (a.platform !== "grok" || a.handle === "clara") && (!preset || a.handle === preset),
   );
   const [selected, setSelected] = useState<string[]>([]);
   return (
@@ -362,6 +364,7 @@ export function ClientDialog({
             aria-label="Nome da conexão"
             required
             placeholder="Ex.: Clara no Grok Bot"
+            defaultValue={preset ? "Clara no Grok Bot" : undefined}
             className="h-10"
           />
         </FormField>

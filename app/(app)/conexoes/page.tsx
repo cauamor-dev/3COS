@@ -32,6 +32,11 @@ async function Connections() {
   return (
     <div className="grid gap-4 lg:grid-cols-2">
       <section className="glass space-y-2 rounded-2xl p-5 lg:col-span-2">
+        <h2 className="text-lg font-semibold">Clara e Chloe</h2>
+        <p className="text-sm text-muted-foreground">Configuração guiada, teste de conexão e estado real da IA gratuita.</p>
+        <Link className="inline-flex min-h-10 items-center text-sm text-lilac" href="/conexoes/ativar">Abrir preparação →</Link>
+      </section>
+      <section className="glass space-y-2 rounded-2xl p-5 lg:col-span-2">
         <h2 className="font-medium">Conexões individuais da Equipe</h2>
         <p className="text-sm text-muted-foreground">
           Crie um token por agente com áreas e operações delimitadas. Conexões

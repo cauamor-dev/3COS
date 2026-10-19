@@ -16,6 +16,14 @@ interface TeamOperation {
 }
 export const teamOperations: TeamOperation[] = [
   {
+    tool: "equipe_diagnostico",
+    description:
+      "Confere identidade da credencial e áreas concedidas, sem conteúdo dos registros ou segredos. Não comprova plataforma nativa nem executa trabalho.",
+    schema: z.object({}),
+    readOnly: true,
+    run: (s) => s.diagnostic(),
+  },
+  {
     tool: "equipe_agentes",
     description:
       "Lista o time atual; habilitação na Central não comprova atividade externa.",

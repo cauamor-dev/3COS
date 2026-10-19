@@ -4,6 +4,8 @@ Fluxo aprovado por Cauã em 18/10/2026. Clara (antes Norte) coordena; Rastro cui
 
 ## Conexão da Clara
 
+Guia autenticado em `/conexoes/ativar`. `npm run clara:prepare` prepara de forma idempotente dois registros sintéticos, um compartilhado e um privado, sem gerar token. O roteiro copiável da página manda a Clara chamar `equipe_diagnostico`, ler o compartilhado, comprovar a recusa do privado e salvar uma confirmação com o marcador lido. IDs e marcadores ficam no ambiente privado. O diagnóstico informa identidade, áreas concedidas e pausa; não comprova sozinho a integração nativa. Só marcar a conexão como validada depois de conferir a resposta real da Clara e o registro confirmado.
+
 Na Central autenticada, Equipe → Conexões → gerar token para **Clara**, com somente Axial e outras áreas explicitamente autorizadas. Não selecionar Pessoal/Finanças. MCP remoto: `https://central3c-caua.netlify.app/api/mcp`, header `Authorization: Bearer <segredo individual>`. O segredo aparece uma vez; armazenar na configuração segura do destino, nunca em chat, arquivo de equipe ou Git. Usar a URL depois do release validado.
 
 Servidor e banco recusam clientes Grok de outro bot. Não compartilhar o token com Rastro/Tereza/Atlas. Se o plugin for global à equipe Grok, não presumir isolamento: confirmar que só Clara pode usá-lo ou manter a ativação pendente. Não fornecer service_role nem credenciais legadas administrativas.

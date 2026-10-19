@@ -8,7 +8,12 @@ import type { SaveEntryInput } from "@/lib/central/schemas";
 import { runChloe } from "@/lib/chloe/agent";
 import { attachmentNote, type ChloeFiles } from "@/lib/chloe/attachment-note";
 import { type Command, interpretCommand } from "@/lib/chloe/command";
-import { chloeAvailable, pickTier, providerChat } from "@/lib/chloe/llm";
+import {
+  ChloeProviderError,
+  chloeAvailable,
+  pickTier,
+  providerChat,
+} from "@/lib/chloe/llm";
 import type { ActionResult } from "./actions";
 import { CHLOE_ACTOR } from "@/lib/central/access";
 import { captureInput, captureNote } from "@/lib/chloe/capture";
@@ -130,6 +135,12 @@ async function executeChloeCommand(
 
   // With files attached, everything goes to the inbox as a note (sorting by area comes later).
   if (files?.links?.length) {
+    if (mode === "perguntar")
+      return {
+        ok: false,
+        error:
+          "Perguntar não salva anexos nem os envia ao modelo. Para guardar o arquivo, use Anotar; para perguntar, envie o trecho de texto desejado.",
+      };
     try {
       const entry = attachmentNote(text, files);
       const { registro } = await central.saveEntry(entry, "manual");
@@ -151,6 +162,7 @@ async function executeChloeCommand(
   if (!command) return { ok: false, error: "Escreva o que você precisa." };
 
   // Rules first (instant, free); a model only for what they did not understand.
+  let modelIssue: string | undefined;
   if (mode === "perguntar" && chloeAvailable()) {
     try {
       const ai = central.asActor(CHLOE_ACTOR);
@@ -172,8 +184,11 @@ async function executeChloeCommand(
           }),
         },
       };
-    } catch {
-      // Providers down or rate limited: fall through and keep the request as a note.
+    } catch (error) {
+      modelIssue =
+        error instanceof ChloeProviderError
+          ? error.message
+          : "A IA não respondeu. A consulta por palavras continua disponível.";
     }
   }
 
@@ -187,11 +202,11 @@ async function executeChloeCommand(
         data: {
           reply: result.total
             ? `Encontrei ${result.total} registros permitidos. Abra as fontes abaixo.`
-            : "Não encontrei registros permitidos para esta pergunta. A IA está desativada; posso buscar por palavras.",
+            : "Não encontrei registros permitidos na busca por palavras desta pergunta.",
           items: result.resultados.map(
             (r) => `${r.titulo}: /registros/${r.id}`,
           ),
-          status: chloeStatus().message,
+          status: modelIssue ?? chloeStatus().message,
         },
       };
     }

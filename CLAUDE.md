@@ -55,7 +55,7 @@ Pronto e em produção: memória compartilhada (MCP, OpenAPI, plugin do Supabase
 
 ## Pendências que só o Cauã pode fazer
 
-- Criar a chave grátis do Groq e colocá-la na Vercel como `GROQ_API_KEY`.
+- Criar a chave no plano Free da Groq e colocá-la somente no projeto Central da Netlify como `GROQ_API_KEY`; confirmar `CHLOE_FREE_TIER_CONFIRMED=1`. Seguir `/conexoes/ativar` e `docs/integrations/chloe.md`: avaliação real antes de ligar a IA. Não cadastrar pagamento.
 - Rodar `npm run telegram:setup` com o token do @BotFather.
 - Ativar o push em Conexões no iPhone.
 - Criar a tarefa agendada do vigia de preços no Claude (`docs/vigia-precos.md`).

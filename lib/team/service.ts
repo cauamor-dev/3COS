@@ -50,6 +50,43 @@ export class TeamService {
         "Esta ação exige o proprietário autenticado.",
       );
   }
+  async diagnostic() {
+    if (this.actor.kind !== "integration")
+      throw new CentralError(
+        "forbidden",
+        "Use a credencial individual para este teste.",
+      );
+    const areas = await this.central.listAllAreas();
+    const agent = checked(
+      await this.db
+        .from("agents")
+        .select("handle,name")
+        .eq("id", this.actor.agentId)
+        .single(),
+    );
+    const control = checked(
+      await this.db
+        .from("execution_control")
+        .select("paused")
+        .eq("id", true)
+        .single(),
+    );
+    return {
+      authenticated: true,
+      client_id: this.actor.id,
+      agent_id: this.actor.agentId,
+      agent,
+      source: this.actor.source,
+      paused: control.paused,
+      areas: areas.map((a) => ({
+        id: a.id,
+        slug: a.slug,
+        operations:
+          this.actor.grants?.find((g) => g.areaId === a.id)?.operations ?? [],
+      })),
+      native_platform_proven: false,
+    };
+  }
   private async entry(id: string, operation: "team" | "execute" = "team") {
     const e = await this.central.getEntry(id);
     assertArea(this.actor, e.area_id, operation);

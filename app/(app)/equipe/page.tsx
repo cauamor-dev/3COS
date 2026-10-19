@@ -7,23 +7,24 @@ import { PageHeader } from "@/components/shell/page-header";
 async function Team({
   searchParams,
 }: {
-  searchParams: Promise<{ work?: string; tab?: string }>;
+  searchParams: Promise<{ work?: string; tab?: string; connect?: string }>;
 }) {
   const m = await requireMember();
   const focus = await searchParams;
   return (
     <TeamView
-      key={`${focus.work ?? ""}:${focus.tab ?? ""}`}
+      key={`${focus.work ?? ""}:${focus.tab ?? ""}:${focus.connect ?? ""}`}
       snapshot={await teamSnapshot(m.central.actor, isDemo(), focus.work)}
       focusWork={focus.work}
       focusTab={focus.tab}
+      focusConnect={focus.connect}
     />
   );
 }
 export default function TeamPage({
   searchParams,
 }: {
-  searchParams: Promise<{ work?: string; tab?: string }>;
+  searchParams: Promise<{ work?: string; tab?: string; connect?: string }>;
 }) {
   return (
     <>
