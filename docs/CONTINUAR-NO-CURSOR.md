@@ -227,3 +227,35 @@ Backup atualizado e restauração isolada aprovados: 33 tabelas e 11 objetos ver
 - **Visual em modo demo:** Novo registro com os oito tipos visíveis em 390×844; Área segura sem rolagem horizontal em 390×844 e 1440×900. O aviso de hidratação no dev vinha dos atributos `data-cursor-ref` injetados pela ferramenta de navegador, não do app.
 - **Checks locais:** typecheck, lint, build e **173 testes em 35 arquivos** aprovados. Nenhum arquivo do hash de avaliação da Chloe alterado. **Sem nova publicação**: a mudança é só teste e documentação, e cada produção custa 15 créditos Netlify.
 - **Dependem do proprietário:** canário privado sintético para testar a recusa ao Cursor; revisão das concessões do Cursor; conexão nativa da Clara no Grok Bot; push em iPhone real (PWA na Tela de Início). O status de conexões com última evidência ainda não foi implementado nesta passagem.
+
+## Passagem do Cursor — madrugada de 19/10/2026
+
+Trabalho autônomo com o proprietário dormindo. Tudo em commits locais na `main`, **sem push e sem publicação**: o revisor automático do Cursor bloqueou publicação e mudanças amplas sem supervisão, e a decisão foi respeitar isso.
+
+### Feito e testado
+
+- `34ee19e` **Equipe:** anexo de registro que virou privado era aceito em conversa compartilhada quando a visibilidade guardada no arquivo estava desatualizada. Agora a privacidade atual do registro é conferida. O download pelas IAs já era bloqueado; o que vazaria era só o ID do arquivo. Teste novo em `tests/team-thread-privacy.test.ts`, que falha sem a correção.
+- `0595e41` **Ordenação:** botão "Recentes/Antigos" na linha do tempo das áreas e no Mural, lembrado por tela (`components/central/sort-toggle.tsx`). Fixados continuam no topo. Notícias mantêm o ranking "Para você"; Tarefas mantêm a ordem por prazo.
+- Conferidos sem mudança: o modo desempenho já remove blur, sombras, estrelas, nebulosa e animações, e o Cérebro vira lista. Links do Feed e das notificações já abrem o registro exato (teste em `tests/navigation.test.ts`). Arquivos, anexar em registro existente e fonte `chloe` no banco já existem.
+- Checks: typecheck, lint, build e **174 testes em 35 arquivos**. As 21 telas do modo demo responderam 200 sem erro no HTML. A revisão visual no navegador ficou incompleta (ferramenta bloqueada); conferir Mural e linha do tempo em 390×844 antes de publicar.
+
+### Para publicar (precisa do proprietário acordado)
+
+1. Rodar `npm run dev:demo` e olhar o botão de ordem no Mural e em uma área, no celular e no PC.
+2. `git push` e seguir a seção 11: `cloud-preview`, validar, depois uma única `cloud-production` (15 créditos).
+
+### Plano do que depende do Cauã, em ordem
+
+1. **Segurança agora (5 min):** a tarefa "Depois de conectar os bots…" em `ambiente-ia` cita uma nota da inbox com login e senha da Axial. Apagar essa nota e trocar a senha. Senhas vão para um gerenciador, não para a Central.
+2. **Permissões do Cursor (5 min):** em Equipe → Conexões, deixar só as áreas de projeto que ele precisa e tirar `execute` enquanto não houver uso da fila.
+3. **Canário privado (5 min):** criar um registro privado sintético em `validacao-3c` e pedir ao Cursor para tentar lê-lo; o esperado é recusa.
+4. **Clara (20 min):** gerar o acesso dela com só `validacao-3c` e `axial`, configurar no Grok Bot nativo e rodar o roteiro de `/conexoes/ativar`.
+5. **Push no iPhone (10 min):** abrir a PWA da Tela de Início → Conexões → ativar push → criar um lembrete de teste para 5 min e conferir chegada, link e horário silencioso.
+6. **Último uso por credencial (decisão + migração):** proposta: coluna `last_used_at` em `integration_clients`, atualizada no máximo a cada 10 min em `resolveClient`, exibida em Conexões. Precisa de `npx supabase db push --linked` com as credenciais do proprietário.
+7. **Vagas nas Notícias (decisão):** escolher 2 ou 3 fontes RSS de vagas remotas de .NET/Angular; adicionar em Notícias → Fontes. O Cursor pode pesquisar e listar candidatas.
+8. **Tradução na coleta (decisão):** exige colunas `title_pt`/`summary_pt` e gasta a cota diária do Groq usada pela Chloe. Sugestão: só traduzir os 5 itens mais bem ranqueados por coleta.
+9. **Pedidos da inbox de 19/10:** finanças automatizadas (P3: pesquisar Open Finance gratuito para Nubank e C6 antes de qualquer conta), chat entre IAs (as conversas da Equipe já são a base; falta cada IA ler/escrever por conta própria, o que depende das conexões 2 a 4) e mais IAs gratuitas (P4, só com gratuidade confirmada).
+
+### Identidade do Cursor no time
+
+Nome escolhido: **Altair**. É a estrela do Triângulo de Verão, ao lado de Vega e Deneb. Papel: quem constrói. Jeito: direto, mostra a evidência antes de dizer que está pronto, avisa quando não sabe e não marca nada como funcionando sem teste real. Cor sugerida: azul-gelo `#8ec5ff`. É um apelido: a identidade técnica continua `cursor` no MCP e no banco. Renomear o agente na Central fica a critério do Cauã.
