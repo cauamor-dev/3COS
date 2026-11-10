@@ -13,7 +13,7 @@ Memória compartilhada entre Claude e ChatGPT, agenda, tarefas, lembretes e um M
 [![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
 [![Custo](https://img.shields.io/badge/custo-R%24%200-success)](#stack)
 
-**[central3c-caua.netlify.app](https://central3c-caua.netlify.app)** (acesso restrito ao dono)
+Projeto em pausa desde 10/11/2026. A versão publicada saiu do ar e o repositório fica como referência de estudo.
 
 Evolução de 18/10: [guia de uso](docs/guia-3c.md), [relatório técnico](docs/relatorio-tecnico-2026-10-18.md), [matriz T01–T26](docs/matriz-aceitacao.md) e [operação/recuperação](docs/operations/release-recovery.md). O host Vercel é mantido durante a transição dos consumidores.
 
